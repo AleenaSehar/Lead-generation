@@ -1,5 +1,7 @@
 # LeadFlow
 
+[![CI](https://github.com/AleenaSehar/Lead-generation/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/AleenaSehar/Lead-generation/actions/workflows/ci.yml)
+
 LeadFlow is a working MVP for an automated lead-generation product. It demonstrates the complete front-office loop: capture a prospect, score the lead, organize the pipeline, and trigger follow-up workflows.
 
 ## Start today
@@ -18,6 +20,21 @@ Open [http://localhost:3000](http://localhost:3000).
 `main` contains production-ready releases and `dev` is the integration branch. Create focused feature branches from `dev` and open pull requests back into `dev`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, pull-request requirements, and the definition of done. The current and target system design is recorded in [docs/architecture.md](docs/architecture.md), and planned delivery is tracked in [docs/roadmap.md](docs/roadmap.md).
+
+## Quality checks
+
+Run the same core checks used by CI before opening a pull request:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm audit --omit=dev --audit-level=high
+```
+
+GitHub Actions runs code quality, production build, and production dependency audit jobs for pull requests into `dev` or `main`. It also runs after changes land on either protected branch.
+
+The dependency audit is scoped to production packages because development-only tooling does not ship with the deployed application. Tooling advisories are still reviewed during dependency updates.
 
 ## What works now
 
@@ -90,6 +107,9 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 .
 ├── public/
 │   └── styles.css
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── src/
 │   ├── app/
 │   ├── components/
