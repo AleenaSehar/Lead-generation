@@ -12,6 +12,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Development workflow
+
+`main` contains production-ready releases and `dev` is the integration branch. Create focused feature branches from `dev` and open pull requests back into `dev`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, pull-request requirements, and the definition of done. The current and target system design is recorded in [docs/architecture.md](docs/architecture.md), and planned delivery is tracked in [docs/roadmap.md](docs/roadmap.md).
+
 ## What works now
 
 - Responsive sales dashboard
@@ -85,6 +91,10 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── app.js
 │   ├── index.html
 │   └── styles.css
+├── docs/
+│   ├── architecture.md
+│   └── roadmap.md
+├── CONTRIBUTING.md
 ├── server.js
 ├── package.json
 └── README.md
