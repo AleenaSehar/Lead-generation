@@ -49,13 +49,23 @@ Keep unrelated changes in separate commits and never commit credentials, `.env` 
 Before opening a pull request:
 
 1. Rebase or merge the latest `dev` into the feature branch.
-2. Run all available checks locally.
+2. Run the required checks locally:
+
+   ```bash
+   npm run lint
+   npm run typecheck
+   npm run build
+   npm audit --omit=dev --audit-level=high
+   ```
+
 3. Review the diff for secrets and unrelated changes.
 4. Complete the pull-request template.
 5. Add screenshots for visible interface changes.
 6. Explain migrations, environment variables, and rollback concerns.
 
 Feature pull requests should target `dev` and use **squash and merge**. Delete the feature branch after it is merged.
+
+GitHub Actions must report successful **Code quality**, **Production build**, and **Production dependency audit** jobs before a pull request is merged.
 
 ## Definition of done
 

@@ -74,6 +74,18 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 
 Secrets belong in environment configuration. They must never appear in commits, screenshots, logs, example data, or pull-request descriptions.
 
+## Continuous integration
+
+GitHub Actions validates every pull request into `dev` and `main`, and every push to those branches. The CI quality gate has three independent jobs:
+
+- ESLint and strict TypeScript checks
+- Optimized Next.js production build
+- High-severity production dependency audit
+
+Workflows use the committed npm lockfile, a fixed Node.js major version, cached package downloads, minimal repository permissions, timeouts, and concurrency cancellation for superseded runs.
+
+Production builds do not fetch fonts or other presentation assets from third-party services. This keeps local, CI, and future deployment builds reproducible when external services are unavailable.
+
 ## Near-term migration path
 
 1. Establish repository standards.
