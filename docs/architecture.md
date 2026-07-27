@@ -2,7 +2,7 @@
 
 ## Current state
 
-LeadFlow is a dependency-free browser prototype served by a small Node.js HTTP server. It uses static demonstration metrics and stores newly added leads in browser `localStorage`.
+LeadFlow is a Next.js and TypeScript browser prototype. It uses static demonstration metrics and stores newly added leads in browser `localStorage`.
 
 This architecture is useful for validating the interface, but it is not a production data system. It has no authentication, database, server-side authorization, email delivery, enrichment, or background workflow execution.
 
@@ -25,7 +25,7 @@ Background jobs     External providers
 
 ### Web application
 
-Next.js with TypeScript will provide the user interface and server API. Input and API payloads will be validated at runtime.
+Next.js with TypeScript provides the user interface and will later provide the server API. Input and API payloads will be validated at runtime when the API layer is introduced.
 
 ### Identity and tenancy
 
@@ -76,9 +76,10 @@ Secrets belong in environment configuration. They must never appear in commits, 
 
 ## Near-term migration path
 
-1. Establish repository standards and automated checks.
+1. Establish repository standards.
 2. Migrate the interface to Next.js and TypeScript without changing product behavior.
-3. Add PostgreSQL and a migration workflow.
-4. Add authentication and workspace authorization.
-5. Implement lead APIs and connect the dashboard to real data.
-6. Add capture, scoring, email, and integration capabilities through separate PRs.
+3. Add automated checks.
+4. Add PostgreSQL and a migration workflow.
+5. Add authentication and workspace authorization.
+6. Implement lead APIs and connect the dashboard to real data.
+7. Add capture, scoring, email, and integration capabilities through separate PRs.
