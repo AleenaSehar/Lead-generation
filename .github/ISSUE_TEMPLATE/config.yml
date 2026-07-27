@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security concern
+    url: https://github.com/AleenaSehar/Lead-generation/security
+    about: Do not publish credentials, vulnerabilities, or personal lead data in an issue.
