@@ -5,7 +5,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 ## Phase 0 — repository foundation
 
 - [x] Repository standards, templates, and architecture notes
-- [ ] Next.js and TypeScript migration
+- [x] Next.js and TypeScript migration
 - [ ] CI checks for linting, types, tests, and production builds
 
 ## Phase 1 — real application foundation

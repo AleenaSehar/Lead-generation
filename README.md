@@ -4,9 +4,10 @@ LeadFlow is a working MVP for an automated lead-generation product. It demonstra
 
 ## Start today
 
-You only need Node.js 18 or newer. There are no packages to install.
+You need Node.js 20.9 or newer.
 
 ```bash
+npm install
 npm run dev
 ```
 
@@ -20,14 +21,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, pull-request requ
 
 ## What works now
 
-- Responsive sales dashboard
+- Responsive Next.js sales dashboard
 - Lead capture form with automatic qualification scoring
 - Searchable and filterable lead pipeline
 - Persistent browser storage for added leads
 - Automation workflow controls
 - Performance, source, and pipeline reporting UI
 
-This first version intentionally uses realistic local demo data. It lets us validate the product and user experience before paying for databases, enrichment providers, or email delivery.
+This version intentionally uses realistic local demo data. It lets us validate the product and user experience before paying for databases, enrichment providers, or email delivery.
 
 ## The product idea
 
@@ -88,14 +89,17 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 ```text
 .
 ├── public/
-│   ├── app.js
-│   ├── index.html
 │   └── styles.css
+├── src/
+│   ├── app/
+│   ├── components/
+│   ├── data/
+│   ├── lib/
+│   └── types/
 ├── docs/
 │   ├── architecture.md
 │   └── roadmap.md
 ├── CONTRIBUTING.md
-├── server.js
 ├── package.json
 └── README.md
 ```
