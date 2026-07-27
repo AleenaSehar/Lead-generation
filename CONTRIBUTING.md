@@ -67,6 +67,20 @@ Feature pull requests should target `dev` and use **squash and merge**. Delete t
 
 GitHub Actions must report successful **Code quality**, **Production build**, and **Production dependency audit** jobs before a pull request is merged.
 
+## Database changes
+
+Database changes require a committed Prisma migration:
+
+1. Update `prisma/schema.prisma`.
+2. Run `npm run db:validate`.
+3. Run `npm run db:migrate -- --name descriptive_name` against the local development database.
+4. Review the generated SQL before committing it.
+5. Regenerate the client with `npm run db:generate`.
+6. Update the safe, idempotent seed only when the feature needs development data.
+7. Document data migration and rollback considerations in the pull request.
+
+Never edit a migration that has already been merged or applied to a shared environment. Create a new corrective migration instead.
+
 ## Definition of done
 
 A change is complete when:
