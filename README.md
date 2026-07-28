@@ -9,11 +9,39 @@ LeadFlow is a working MVP for an automated lead-generation product. It demonstra
 You need Node.js 20.9 or newer.
 
 ```bash
+cp .env.example .env
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+The interface still uses browser demo data. To prepare the real PostgreSQL foundation for upcoming API work, complete the database setup below.
+
+## Database setup
+
+Docker is the simplest local option:
+
+```bash
+docker compose up -d postgres
+npm run db:migrate:deploy
+npm run db:seed
+```
+
+The development database is available on local port `55432`, which avoids common local PostgreSQL ports. The seed creates a fictional `.example` lead and a draft workflow; it never sends email.
+
+Useful database commands:
+
+```bash
+npm run db:validate        # Validate the Prisma schema
+npm run db:generate        # Regenerate the typed Prisma Client
+npm run db:migrate         # Create/apply a development migration
+npm run db:migrate:deploy  # Apply committed migrations
+npm run db:seed            # Load safe development records
+npm run db:studio          # Inspect local data
+```
+
+See [docs/database.md](docs/database.md) for the data model, migration workflow, and environment guidance.
 
 ## Development workflow
 
@@ -44,8 +72,9 @@ The dependency audit is scoped to production packages because development-only t
 - Persistent browser storage for added leads
 - Automation workflow controls
 - Performance, source, and pipeline reporting UI
+- PostgreSQL and Prisma foundation with workspace-aware models
 
-This version intentionally uses realistic local demo data. It lets us validate the product and user experience before paying for databases, enrichment providers, or email delivery.
+The interface still intentionally uses realistic browser demo data. PostgreSQL is now available for the authentication and lead-API phases, but the dashboard will not read it until those separate PRs are complete.
 
 ## The product idea
 
@@ -110,6 +139,10 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
+├── prisma/
+│   ├── migrations/
+│   ├── schema.prisma
+│   └── seed.ts
 ├── src/
 │   ├── app/
 │   ├── components/
@@ -118,7 +151,10 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   └── types/
 ├── docs/
 │   ├── architecture.md
+│   ├── database.md
 │   └── roadmap.md
+├── compose.yaml
+├── prisma.config.ts
 ├── CONTRIBUTING.md
 ├── package.json
 └── README.md

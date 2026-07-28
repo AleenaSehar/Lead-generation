@@ -19,6 +19,9 @@ concurrency:
 
 env:
   NODE_VERSION: "22"
+  # Prisma Client generation needs a syntactically valid URL but CI does not
+  # connect to a database during lint, type-check, audit, or build jobs.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/leadflow_ci"
 
 jobs:
   quality:

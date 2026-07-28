@@ -1,0 +1,80 @@
+# Database development
+
+LeadFlow uses PostgreSQL 17 and Prisma ORM 7. The database foundation is workspace-aware so future authentication and APIs can enforce tenant isolation from their first release.
+
+## Local setup
+
+Create your local environment file before installing packages because Prisma Client generation reads `DATABASE_URL`:
+
+```bash
+cp .env.example .env
+npm install
+```
+
+Start the isolated PostgreSQL service and prepare it:
+
+```bash
+docker compose up -d postgres
+npm run db:migrate:deploy
+npm run db:seed
+```
+
+The container maps PostgreSQL to `localhost:55432`. Database files live in the named Docker volume `leadflow_postgres_data`.
+
+Stop the service without deleting its data:
+
+```bash
+docker compose stop postgres
+```
+
+Removing the named volume permanently deletes the local database and is intentionally not part of the normal workflow.
+
+## Initial model
+
+- `User`, `Workspace`, and `WorkspaceMember` establish multi-tenant ownership and roles.
+- `Lead` stores contact, company, source, score, consent, owner, campaign, and custom-field data.
+- `LeadActivity` provides an append-oriented prospect timeline and audit context.
+- `Campaign` groups acquisition or outreach work.
+- `Workflow` and `WorkflowRun` represent automation definitions and executions.
+- `EmailSequence`, `EmailStep`, and `EmailEvent` support future outreach and delivery tracking.
+- `SuppressionEntry` blocks contact after unsubscribe, bounce, complaint, manual, or legal events.
+
+Workspace identifiers are included in business-level unique constraints and indexes. Server code must still scope every protected query to a workspace authorized by the signed-in user.
+
+## Migration workflow
+
+After changing `prisma/schema.prisma`:
+
+```bash
+npm run db:validate
+npm run db:migrate -- --name short_descriptive_name
+npm run db:generate
+```
+
+Review the generated SQL for:
+
+- destructive drops or irreversible conversions;
+- missing indexes on common workspace queries;
+- correct foreign-key deletion behavior;
+- safe defaults for existing rows;
+- cross-workspace uniqueness mistakes.
+
+Commit both the schema and migration. Never rewrite a migration already applied to a shared environment.
+
+Production and preview environments apply committed migrations with:
+
+```bash
+npm run db:migrate:deploy
+```
+
+## Seed safety
+
+`npm run db:seed` is explicit and idempotent. It creates only fictional development records under `.local` and `.example` domains. Seeded workflows remain drafts and no email provider is connected.
+
+Never copy production credentials, customer contacts, exported leads, or provider tokens into the seed or repository.
+
+## Generated client
+
+Prisma Client is generated into `src/generated/prisma` and ignored by Git. `postinstall` regenerates it after dependency installation, while `npm run db:generate` handles schema changes during development.
+
+Use `getDatabase()` from `src/lib/database.ts` in future server-only code. It reuses the connection during local hot reload and fails clearly when `DATABASE_URL` is missing.

@@ -2,9 +2,9 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript browser prototype. It uses static demonstration metrics and stores newly added leads in browser `localStorage`.
+LeadFlow is a Next.js and TypeScript browser prototype with a PostgreSQL and Prisma data foundation. The current interface still uses static demonstration metrics and stores newly added leads in browser `localStorage`; connecting it to PostgreSQL is intentionally reserved for the lead-API PR.
 
-This architecture is useful for validating the interface, but it is not a production data system. It has no authentication, database, server-side authorization, email delivery, enrichment, or background workflow execution.
+The database schema and migrations are real, but the application is not yet a production data system. It has no authentication, server-side workspace authorization, live lead API, email delivery, enrichment, or background workflow execution.
 
 ## Target architecture
 
@@ -33,12 +33,11 @@ Every user belongs to one or more workspaces. All business records carry a works
 
 ### Data
 
-PostgreSQL is the system of record. Prisma will initially provide schema management, migrations, and typed data access.
+PostgreSQL is the planned system of record. Prisma provides schema management, reviewed SQL migrations, typed data access, and safe development seeding.
 
-The first domain models are expected to include:
+The initial domain models include:
 
-- User and Workspace
-- WorkspaceMember
+- User, Workspace, and WorkspaceMember
 - Lead and LeadActivity
 - LeadSource
 - Campaign
@@ -46,7 +45,7 @@ The first domain models are expected to include:
 - EmailSequence and EmailEvent
 - SuppressionEntry
 
-The model list is directional and will be finalized in the database-foundation PR.
+All business and operational records are scoped to a workspace. Database-level uniqueness, foreign keys, deletion behavior, and query indexes provide the first layer of consistency; application authorization will add the next layer.
 
 ### Asynchronous work
 
