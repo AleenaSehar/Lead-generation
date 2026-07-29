@@ -2,9 +2,9 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript application with Supabase Auth plus a PostgreSQL and Prisma data foundation. Authentication, cookie-based sessions, users, and workspace membership are persistent. The current lead interface still uses demonstration metrics and browser `localStorage`; connecting leads to PostgreSQL is intentionally reserved for the lead-API PR.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, and the authorized lead API are persistent. The current lead interface still uses demonstration metrics and browser `localStorage`; connecting it to the API is the next focused PR.
 
-The database schema, migrations, identity verification, and workspace authorization are real, but the application is not yet a complete production data system. It has no live lead API, team invitations, email delivery, enrichment, or background workflow execution.
+The database schema, migrations, identity verification, workspace authorization, lead validation, and role enforcement are real, but the application is not yet a complete production data system. It has no team invitations, email delivery, enrichment, or background workflow execution.
 
 ## Target architecture
 
@@ -25,7 +25,7 @@ Background jobs     External providers
 
 ### Web application
 
-Next.js with TypeScript provides the user interface and will later provide the server API. Input and API payloads will be validated at runtime when the API layer is introduced.
+Next.js with TypeScript provides the user interface and server API. Zod validates lead payloads and query parameters at runtime. Route handlers authenticate requests, while a service layer enforces role permissions and workspace-scoped database access.
 
 ### Identity and tenancy
 
@@ -77,8 +77,9 @@ Secrets belong in environment configuration. They must never appear in commits, 
 
 ## Continuous integration
 
-GitHub Actions validates every pull request into `dev` and `main`, and every push to those branches. The CI quality gate has three independent jobs:
+GitHub Actions validates every pull request into `dev` and `main`, and every push to those branches. The CI quality gate has four independent jobs:
 
+- Vitest unit and PostgreSQL-backed integration tests
 - ESLint and strict TypeScript checks
 - Optimized Next.js production build
 - High-severity production dependency audit
@@ -94,5 +95,6 @@ Production builds do not fetch fonts or other presentation assets from third-par
 3. Add automated checks.
 4. Add PostgreSQL and a migration workflow.
 5. Add authentication and workspace authorization.
-6. Implement lead APIs and connect the dashboard to real data.
-7. Add capture, scoring, email, and integration capabilities through separate PRs.
+6. Implement authorized lead APIs.
+7. Connect the dashboard to persistent lead data.
+8. Add capture, scoring, email, and integration capabilities through separate PRs.

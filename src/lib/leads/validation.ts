@@ -1,0 +1,56 @@
+import { z } from "zod";
+import { LeadSourceType, LeadStatus } from "@/generated/prisma/enums";
+
+const nullableText = (maximum: number) =>
+  z
+    .string()
+    .trim()
+    .max(maximum)
+    .nullable()
+    .transform((value) => value || null);
+
+const leadFieldsSchema = z.object({
+  firstName: nullableText(80),
+  lastName: nullableText(80),
+  email: z.string().trim().email("Enter a valid email address.").toLowerCase(),
+  phone: nullableText(40),
+  jobTitle: nullableText(120),
+  companyName: nullableText(160),
+  companyDomain: nullableText(253),
+  status: z.enum(LeadStatus),
+  source: z.enum(LeadSourceType),
+  score: z.number().int().min(0).max(100),
+  consentAt: z.iso.datetime().nullable(),
+  consentSource: nullableText(160),
+  customFields: z.record(z.string(), z.unknown()).nullable(),
+});
+
+export const createLeadSchema = leadFieldsSchema
+  .partial()
+  .required({ email: true })
+  .extend({
+    status: z.enum(LeadStatus).default(LeadStatus.NEW),
+    source: z.enum(LeadSourceType).default(LeadSourceType.MANUAL),
+    score: z.number().int().min(0).max(100).default(0),
+  })
+  .strict();
+
+export const updateLeadSchema = leadFieldsSchema
+  .partial()
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required.");
+
+export const leadListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(120).optional(),
+  status: z.enum(LeadStatus).optional(),
+  source: z.enum(LeadSourceType).optional(),
+  minScore: z.coerce.number().int().min(0).max(100).optional(),
+  sort: z.enum(["createdAt", "updatedAt", "score", "lastActivityAt"]).default("createdAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type CreateLeadInput = z.infer<typeof createLeadSchema>;
+export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
+export type LeadListQuery = z.infer<typeof leadListQuerySchema>;
