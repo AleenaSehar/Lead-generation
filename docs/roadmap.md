@@ -11,7 +11,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 ## Phase 1 — real application foundation
 
 - [x] PostgreSQL and Prisma foundation
-- [ ] Authentication and workspace membership
+- [x] Supabase authentication and workspace membership
 - [ ] Authorized lead-management API
 - [ ] Dashboard connected to persistent lead data
 

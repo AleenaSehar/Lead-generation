@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLeads } from "@/components/leads/lead-provider";
+import { signOut } from "@/app/auth/actions";
+import type { Viewer } from "@/components/layout/app-shell";
 
 const workspaceLinks = [
   { href: "/", icon: "⌂", label: "Overview" },
@@ -16,7 +18,7 @@ const manageLinks = [
   { href: "/settings", icon: "⚙", label: "Settings" },
 ];
 
-export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
+export function Sidebar({ open, onNavigate, viewer }: { open: boolean; onNavigate: () => void; viewer: Viewer }) {
   const pathname = usePathname();
   const { leads } = useLeads();
 
@@ -53,9 +55,11 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         <button type="button">View usage</button>
       </div>
       <div className="profile">
-        <span className="avatar">AS</span>
-        <div><strong>Aleena Sehar</strong><small>Workspace owner</small></div>
-        <button type="button" aria-label="Profile options">•••</button>
+        <span className="avatar">{viewer.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</span>
+        <div><strong>{viewer.name}</strong><small>{viewer.workspaceName} · {viewer.role.toLowerCase()}</small></div>
+        <form action={signOut}>
+          <button type="submit" aria-label={`Sign out ${viewer.email}`} title="Sign out">↪</button>
+        </form>
       </div>
     </aside>
   );
