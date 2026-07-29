@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
-import { AppShell } from "@/components/layout/app-shell";
-import { LeadProvider } from "@/components/leads/lead-provider";
 
 export const metadata: Metadata = {
   title: {
@@ -14,11 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>
-        <LeadProvider>
-          <AppShell>{children}</AppShell>
-        </LeadProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -16,7 +16,44 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The interface still uses browser demo data. To prepare the real PostgreSQL foundation for upcoming API work, complete the database setup below.
+Before signing in, create a Supabase development project and replace the placeholder Auth values in `.env`. See [Authentication setup](#authentication-setup).
+
+The interface still uses browser demo lead data. Authentication, users, workspaces, and memberships are persisted; connecting dashboard leads to PostgreSQL is the next API phase.
+
+## Authentication setup
+
+1. Create a project in the [Supabase dashboard](https://supabase.com/dashboard).
+2. Open the project’s **Connect** or **API Keys** settings.
+3. Copy the project URL and publishable key into `.env`:
+
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
+
+4. In Supabase Auth URL configuration, set the development site URL to `http://localhost:3000`.
+5. Add `http://localhost:3000/auth/callback` to the allowed redirect URLs.
+6. Keep email/password authentication and email confirmation enabled.
+
+Start PostgreSQL and apply migrations before creating your first account:
+
+```bash
+docker compose up -d postgres
+npm run db:migrate:deploy
+npm run dev
+```
+
+Visit [http://localhost:3000/sign-up](http://localhost:3000/sign-up), confirm the email Supabase sends, and create your first LeadFlow workspace.
+
+Authentication routes:
+
+- `/sign-in`
+- `/sign-up`
+- `/forgot-password`
+- `/update-password`
+- `/onboarding`
+
+See [docs/authentication.md](docs/authentication.md) for session architecture, workspace authorization, and a complete verification checklist.
 
 ## Database setup
 
@@ -73,8 +110,10 @@ The dependency audit is scoped to production packages because development-only t
 - Automation workflow controls
 - Performance, source, and pipeline reporting UI
 - PostgreSQL and Prisma foundation with workspace-aware models
+- Supabase email/password authentication and session refresh
+- Protected dashboard routes and persistent workspace onboarding
 
-The interface still intentionally uses realistic browser demo data. PostgreSQL is now available for the authentication and lead-API phases, but the dashboard will not read it until those separate PRs are complete.
+The interface still intentionally uses realistic browser demo lead data. Supabase Auth identities and PostgreSQL workspace records are real; dashboard leads will remain local until the lead-management API PR.
 
 ## The product idea
 
@@ -151,6 +190,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   └── types/
 ├── docs/
 │   ├── architecture.md
+│   ├── authentication.md
 │   ├── database.md
 │   └── roadmap.md
 ├── compose.yaml

@@ -6,7 +6,15 @@ import { Topbar } from "@/components/layout/topbar";
 import { AddLeadModal } from "@/components/leads/add-lead-modal";
 import { Toast } from "@/components/shared/toast";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export interface Viewer {
+  name: string;
+  email: string;
+  imageUrl: string | null;
+  workspaceName: string;
+  role: string;
+}
+
+export function AppShell({ children, viewer }: { children: React.ReactNode; viewer: Viewer }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
@@ -19,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell">
-      <Sidebar open={menuOpen} onNavigate={() => setMenuOpen(false)} />
+      <Sidebar open={menuOpen} onNavigate={() => setMenuOpen(false)} viewer={viewer} />
       <main>
         <Topbar onMenu={() => setMenuOpen((open) => !open)} onAddLead={() => setLeadModalOpen(true)} />
         {children}

@@ -31,7 +31,7 @@ Removing the named volume permanently deletes the local database and is intentio
 
 ## Initial model
 
-- `User`, `Workspace`, and `WorkspaceMember` establish multi-tenant ownership and roles.
+- `User`, `Workspace`, and `WorkspaceMember` establish multi-tenant ownership and roles. `User.supabaseUserId` links a verified Supabase identity without treating mutable email as the identity key.
 - `Lead` stores contact, company, source, score, consent, owner, campaign, and custom-field data.
 - `LeadActivity` provides an append-oriented prospect timeline and audit context.
 - `Campaign` groups acquisition or outreach work.

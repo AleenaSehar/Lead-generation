@@ -22,6 +22,8 @@ env:
   # Prisma Client generation needs a syntactically valid URL but CI does not
   # connect to a database during lint, type-check, audit, or build jobs.
   DATABASE_URL: "postgresql://ci:ci@localhost:5432/leadflow_ci"
+  NEXT_PUBLIC_SUPABASE_URL: "https://ci-placeholder.supabase.co"
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_placeholder"
 
 jobs:
   quality:

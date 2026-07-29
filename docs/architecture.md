@@ -2,9 +2,9 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript browser prototype with a PostgreSQL and Prisma data foundation. The current interface still uses static demonstration metrics and stores newly added leads in browser `localStorage`; connecting it to PostgreSQL is intentionally reserved for the lead-API PR.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus a PostgreSQL and Prisma data foundation. Authentication, cookie-based sessions, users, and workspace membership are persistent. The current lead interface still uses demonstration metrics and browser `localStorage`; connecting leads to PostgreSQL is intentionally reserved for the lead-API PR.
 
-The database schema and migrations are real, but the application is not yet a production data system. It has no authentication, server-side workspace authorization, live lead API, email delivery, enrichment, or background workflow execution.
+The database schema, migrations, identity verification, and workspace authorization are real, but the application is not yet a complete production data system. It has no live lead API, team invitations, email delivery, enrichment, or background workflow execution.
 
 ## Target architecture
 
@@ -29,7 +29,9 @@ Next.js with TypeScript provides the user interface and will later provide the s
 
 ### Identity and tenancy
 
-Every user belongs to one or more workspaces. All business records carry a workspace identifier, and authorization is enforced on the server rather than trusting client-supplied identifiers.
+Supabase Auth manages email/password identities, confirmation, recovery, and cookie-based sessions. LeadFlow synchronizes verified identities to its own `User` model using the stable Supabase user ID rather than email.
+
+Every application user belongs to one or more workspaces. All business records carry a workspace identifier, and server helpers verify membership before rendering protected routes or, later, executing APIs. Client-supplied workspace identifiers are never trusted by themselves.
 
 ### Data
 
