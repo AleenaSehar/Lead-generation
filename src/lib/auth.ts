@@ -9,21 +9,26 @@ export const getCurrentUser = cache(async () => {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
-  const email = data.user?.email;
-  if (error || !data.user || !email) return null;
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const email = typeof claims?.email === "string" ? claims.email : null;
+  const supabaseUserId = typeof claims?.sub === "string" ? claims.sub : null;
+  if (error || !claims || !email || !supabaseUserId) return null;
 
-  const authUser = data.user;
   const database = getDatabase();
+  const metadata =
+    claims.user_metadata && typeof claims.user_metadata === "object"
+      ? (claims.user_metadata as Record<string, unknown>)
+      : {};
   const name =
-    (typeof authUser.user_metadata.full_name === "string" && authUser.user_metadata.full_name) ||
-    (typeof authUser.user_metadata.name === "string" && authUser.user_metadata.name) ||
+    (typeof metadata.full_name === "string" && metadata.full_name) ||
+    (typeof metadata.name === "string" && metadata.name) ||
     email.split("@")[0];
   const imageUrl =
-    typeof authUser.user_metadata.avatar_url === "string" ? authUser.user_metadata.avatar_url : null;
+    typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
 
   const existingIdentity = await database.user.findUnique({
-    where: { supabaseUserId: authUser.id },
+    where: { supabaseUserId },
   });
 
   if (existingIdentity) {
@@ -37,12 +42,12 @@ export const getCurrentUser = cache(async () => {
   if (existingEmail) {
     return database.user.update({
       where: { id: existingEmail.id },
-      data: { supabaseUserId: authUser.id, name, imageUrl },
+      data: { supabaseUserId, name, imageUrl },
     });
   }
 
   return database.user.create({
-    data: { supabaseUserId: authUser.id, email, name, imageUrl },
+    data: { supabaseUserId, email, name, imageUrl },
   });
 });
 

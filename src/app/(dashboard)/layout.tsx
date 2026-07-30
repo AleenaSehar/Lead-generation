@@ -8,7 +8,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { user, workspace, membership } = await requireWorkspace();
 
   return (
-    <LeadProvider>
+    <LeadProvider role={membership.role}>
       <AppShell
         viewer={{
           name: user.name ?? user.email,

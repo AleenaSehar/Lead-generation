@@ -49,7 +49,11 @@ export async function listLeads(
       : {}),
   };
 
-  const [leads, total] = await database.$transaction([
+  const activeWhere: Prisma.LeadWhereInput = {
+    workspaceId: context.workspaceId,
+    status: { not: LeadStatus.ARCHIVED },
+  };
+  const [leads, total, statusCounts, sourceCounts] = await Promise.all([
     database.lead.findMany({
       where,
       orderBy: { [query.sort]: query.order },
@@ -57,7 +61,24 @@ export async function listLeads(
       take: query.pageSize,
     }),
     database.lead.count({ where }),
+    database.lead.groupBy({
+      by: ["status"],
+      where: activeWhere,
+      orderBy: { status: "asc" },
+      _count: { id: true },
+    }),
+    database.lead.groupBy({
+      by: ["source"],
+      where: activeWhere,
+      orderBy: { source: "asc" },
+      _count: { id: true },
+    }),
   ]);
+
+  const byStatus = Object.fromEntries(
+    statusCounts.map((item) => [item.status, item._count.id]),
+  ) as Partial<Record<LeadStatus, number>>;
+  const activeTotal = statusCounts.reduce((sum, item) => sum + item._count.id, 0);
 
   return {
     data: leads,
@@ -66,6 +87,15 @@ export async function listLeads(
       pageSize: query.pageSize,
       total,
       totalPages: Math.ceil(total / query.pageSize),
+    },
+    summary: {
+      total: activeTotal,
+      qualified: byStatus[LeadStatus.QUALIFIED] ?? 0,
+      converted: byStatus[LeadStatus.CONVERTED] ?? 0,
+      byStatus,
+      bySource: Object.fromEntries(
+        sourceCounts.map((item) => [item.source, item._count.id]),
+      ),
     },
   };
 }

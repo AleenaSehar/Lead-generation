@@ -162,6 +162,9 @@ describe("lead service integration", () => {
       leadListQuerySchema.parse({ search: "Searchable", status: "QUALIFIED", minScore: "80" }),
     );
     expect(result.data.map((item) => item.id)).toContain(lead.id);
+    expect(result.summary.total).toBeGreaterThan(0);
+    expect(result.summary.qualified).toBeGreaterThan(0);
+    expect(result.summary.bySource.WEBSITE).toBeGreaterThan(0);
 
     const detailed = await getLead(database, owner, lead.id);
     expect(detailed.activities.map((activity) => activity.type)).toEqual(

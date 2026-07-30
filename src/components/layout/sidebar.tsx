@@ -20,7 +20,7 @@ const manageLinks = [
 
 export function Sidebar({ open, onNavigate, viewer }: { open: boolean; onNavigate: () => void; viewer: Viewer }) {
   const pathname = usePathname();
-  const { leads } = useLeads();
+  const { summary } = useLeads();
 
   const renderLink = (item: (typeof workspaceLinks)[number]) => (
     <Link
@@ -31,7 +31,7 @@ export function Sidebar({ open, onNavigate, viewer }: { open: boolean; onNavigat
     >
       <span className="nav-icon" aria-hidden="true">{item.icon}</span>
       {item.label}
-      {item.href === "/leads" && <b>{leads.length}</b>}
+      {item.href === "/leads" && <b>{summary.total}</b>}
     </Link>
   );
 
@@ -50,15 +50,17 @@ export function Sidebar({ open, onNavigate, viewer }: { open: boolean; onNavigat
       <div className="sidebar-card">
         <span className="spark">✦</span>
         <strong>Starter plan</strong>
-        <p>142 of 500 leads used</p>
-        <div className="progress"><i /></div>
+        <p>{summary.total} of 500 leads used</p>
+        <div className="progress"><i style={{ width: `${Math.min(100, (summary.total / 500) * 100)}%` }} /></div>
         <button type="button">View usage</button>
       </div>
       <div className="profile">
         <span className="avatar">{viewer.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</span>
         <div><strong>{viewer.name}</strong><small>{viewer.workspaceName} · {viewer.role.toLowerCase()}</small></div>
         <form action={signOut}>
-          <button type="submit" aria-label={`Sign out ${viewer.email}`} title="Sign out">↪</button>
+          <button className="logout-button" type="submit" aria-label={`Sign out ${viewer.email}`} title="Sign out">
+            <span aria-hidden="true">↪</span> Log out
+          </button>
         </form>
       </div>
     </aside>

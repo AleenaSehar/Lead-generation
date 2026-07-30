@@ -18,7 +18,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Before signing in, create a Supabase development project and replace the placeholder Auth values in `.env`. See [Authentication setup](#authentication-setup).
 
-The interface still uses browser demo lead data. Authentication, users, workspaces, memberships, and the authorized lead API are persistent; connecting the dashboard to that API is the next phase.
+Authentication, workspaces, leads, pipeline actions, and dashboard lead metrics are persisted in PostgreSQL. Automation and campaign reporting remain demonstration-only until their respective phases.
 
 ## Authentication setup
 
@@ -105,18 +105,21 @@ The dependency audit is scoped to production packages because development-only t
 ## What works now
 
 - Responsive Next.js sales dashboard
-- Lead capture form with automatic qualification scoring
+- Persistent lead capture form
 - Searchable and filterable lead pipeline
-- Persistent browser storage for added leads
+- Server-backed lead status updates and archival
+- Drag-and-drop lead pipeline with stage summaries
 - Automation workflow controls
 - Performance, source, and pipeline reporting UI
 - PostgreSQL and Prisma foundation with workspace-aware models
 - Supabase email/password authentication and session refresh
+- Visible logout control and accessible password visibility toggles
 - Protected dashboard routes and persistent workspace onboarding
 - Authenticated, workspace-scoped lead CRUD API
 - Role-based lead permissions, validation, filtering, pagination, and activity history
+- Database-backed dashboard totals, source metrics, and recent leads
 
-The interface still intentionally uses realistic browser demo lead data. Supabase Auth identities, PostgreSQL workspace records, and API-created leads are real; the next PR will connect the dashboard to the API.
+Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
 ## Lead API
 

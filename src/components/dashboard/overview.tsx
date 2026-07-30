@@ -3,11 +3,23 @@
 import Link from "next/link";
 import { useLeads } from "@/components/leads/lead-provider";
 import { MetricCard } from "@/components/dashboard/metric-card";
-import { getInitials } from "@/lib/leads";
+import { formatRelativeTime, getInitials, getLeadName } from "@/lib/leads";
 
 export function Overview() {
-  const { leads } = useLeads();
-  const totalLeads = 1284 + leads.length - 8;
+  const { leads, summary, loading, error, loadLeads } = useLeads();
+  const qualificationRate = summary.total
+    ? Math.round((summary.qualified / summary.total) * 100)
+    : 0;
+  const conversionRate = summary.total
+    ? Math.round((summary.converted / summary.total) * 100)
+    : 0;
+  const disqualified = summary.byStatus.DISQUALIFIED ?? 0;
+  const activePipeline = Math.max(0, summary.total - summary.converted - disqualified);
+  const website = summary.bySource.WEBSITE ?? 0;
+  const linkedIn = summary.bySource.LINKEDIN ?? 0;
+  const referral = summary.bySource.REFERRAL ?? 0;
+  const other = Math.max(0, summary.total - website - linkedIn - referral);
+  const percentage = (count: number) => summary.total ? Math.round((count / summary.total) * 100) : 0;
 
   return (
     <section className="page">
@@ -21,10 +33,10 @@ export function Overview() {
       </div>
 
       <div className="metrics">
-        <MetricCard icon="◎" tone="purple" label="Total leads" value={totalLeads.toLocaleString()} change="12.4%" detail="vs. 1,142 last month" />
-        <MetricCard icon="✓" tone="green" label="Qualified leads" value="386" change="8.2%" detail="30.1% qualification rate" />
-        <MetricCard icon="✦" tone="orange" label="Conversion rate" value="18.6%" change="3.1%" detail="Industry average: 12.4%" />
-        <MetricCard icon="$" tone="blue" label="Pipeline value" value="$84.2k" change="18.7%" detail="Across 47 opportunities" />
+        <MetricCard icon="◎" tone="purple" label="Total leads" value={summary.total.toLocaleString()} change="Live" detail="Active workspace leads" />
+        <MetricCard icon="✓" tone="green" label="Qualified leads" value={summary.qualified.toLocaleString()} change="Live" detail={`${qualificationRate}% qualification rate`} />
+        <MetricCard icon="✦" tone="orange" label="Conversion rate" value={`${conversionRate}%`} change="Live" detail={`${summary.converted} converted leads`} />
+        <MetricCard icon="↗" tone="blue" label="Active pipeline" value={activePipeline.toLocaleString()} change="Live" detail="Open, qualified, and contacted" />
       </div>
 
       <div className="dashboard-grid">
@@ -56,12 +68,12 @@ export function Overview() {
         <article className="panel source-panel">
           <div className="panel-header"><div><h2>Lead sources</h2><p>Where your leads come from</p></div><button type="button">•••</button></div>
           <div className="donut-wrap">
-            <div className="donut"><span><strong>1,284</strong><small>Total leads</small></span></div>
+            <div className="donut"><span><strong>{summary.total.toLocaleString()}</strong><small>Total leads</small></span></div>
             <ul>
-              <li><i className="violet" /><span>Website</span><strong>42%</strong></li>
-              <li><i className="cyan" /><span>LinkedIn</span><strong>26%</strong></li>
-              <li><i className="yellow" /><span>Referral</span><strong>18%</strong></li>
-              <li><i className="pink" /><span>Other</span><strong>14%</strong></li>
+              <li><i className="violet" /><span>Website</span><strong>{percentage(website)}%</strong></li>
+              <li><i className="cyan" /><span>LinkedIn</span><strong>{percentage(linkedIn)}%</strong></li>
+              <li><i className="yellow" /><span>Referral</span><strong>{percentage(referral)}%</strong></li>
+              <li><i className="pink" /><span>Other</span><strong>{percentage(other)}%</strong></li>
             </ul>
           </div>
         </article>
@@ -72,14 +84,19 @@ export function Overview() {
             <Link className="text-button" href="/leads">View all <span>→</span></Link>
           </div>
           <div className="lead-list">
-            {leads.slice(0, 4).map((lead) => (
-              <div className="lead-item" key={`${lead.email}-${lead.time}`}>
-                <span className="lead-avatar" style={{ background: lead.color }}>{getInitials(lead.name)}</span>
-                <section><strong>{lead.name}</strong><small>{lead.company}</small></section>
+            {loading ? <div className="error-state">Loading recent leads…</div> : error ? (
+              <div className="error-state"><span>{error}</span> <button type="button" onClick={() => void loadLeads()}>Try again</button></div>
+            ) : leads.length ? leads.slice(0, 4).map((lead) => {
+              const name = getLeadName(lead);
+              return (
+              <div className="lead-item" key={lead.id}>
+                <span className="lead-avatar">{getInitials(name)}</span>
+                <section><strong>{name}</strong><small>{lead.companyName || "No company"}</small></section>
                 <span className="lead-score"><i style={{ background: lead.score >= 80 ? "#25a678" : "#e9a449" }} />{lead.score}</span>
-                <time>{lead.time}</time>
+                <time>{formatRelativeTime(lead.createdAt)}</time>
               </div>
-            ))}
+              );
+            }) : <div className="error-state">No leads yet. Add your first prospect to get started.</div>}
           </div>
         </article>
 

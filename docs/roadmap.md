@@ -13,7 +13,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 - [x] PostgreSQL and Prisma foundation
 - [x] Supabase authentication and workspace membership
 - [x] Authorized lead-management API
-- [ ] Dashboard connected to persistent lead data
+- [x] Dashboard connected to persistent lead data
 
 **Outcome:** users can sign in and securely manage real leads within isolated workspaces.
 
