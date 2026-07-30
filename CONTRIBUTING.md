@@ -54,6 +54,7 @@ Before opening a pull request:
    ```bash
    npm run lint
    npm run typecheck
+   npm test
    npm run build
    npm audit --omit=dev --audit-level=high
    ```
@@ -65,7 +66,7 @@ Before opening a pull request:
 
 Feature pull requests should target `dev` and use **squash and merge**. Delete the feature branch after it is merged.
 
-GitHub Actions must report successful **Code quality**, **Production build**, and **Production dependency audit** jobs before a pull request is merged.
+GitHub Actions must report successful **Automated tests**, **Code quality**, **Production build**, and **Production dependency audit** jobs before a pull request is merged.
 
 ## Database changes
 

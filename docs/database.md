@@ -78,3 +78,11 @@ Never copy production credentials, customer contacts, exported leads, or provide
 Prisma Client is generated into `src/generated/prisma` and ignored by Git. `postinstall` regenerates it after dependency installation, while `npm run db:generate` handles schema changes during development.
 
 Use `getDatabase()` from `src/lib/database.ts` in future server-only code. It reuses the connection during local hot reload and fails clearly when `DATABASE_URL` is missing.
+
+## Lead write behavior
+
+Lead creation, updates, and archival are handled by the lead service. Each write and its corresponding `LeadActivity` records run in one transaction, so the audit history cannot be separated from a successful change.
+
+`DELETE /api/leads/:leadId` is intentionally a soft delete: it changes the status to `ARCHIVED`. Default list queries exclude archived leads, while an explicit `status=ARCHIVED` filter retrieves them. Email uniqueness is scoped per workspace and duplicate writes return an API conflict instead of creating a second record.
+
+Integration tests create isolated workspaces and users, exercise the real PostgreSQL constraints, and clean up only their uniquely named test records.

@@ -18,7 +18,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Before signing in, create a Supabase development project and replace the placeholder Auth values in `.env`. See [Authentication setup](#authentication-setup).
 
-The interface still uses browser demo lead data. Authentication, users, workspaces, and memberships are persisted; connecting dashboard leads to PostgreSQL is the next API phase.
+The interface still uses browser demo lead data. Authentication, users, workspaces, memberships, and the authorized lead API are persistent; connecting the dashboard to that API is the next phase.
 
 ## Authentication setup
 
@@ -93,11 +93,12 @@ Run the same core checks used by CI before opening a pull request:
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 npm audit --omit=dev --audit-level=high
 ```
 
-GitHub Actions runs code quality, production build, and production dependency audit jobs for pull requests into `dev` or `main`. It also runs after changes land on either protected branch.
+GitHub Actions runs code quality, PostgreSQL-backed automated tests, a production build, and a production dependency audit for pull requests into `dev` or `main`. It also runs after changes land on either protected branch.
 
 The dependency audit is scoped to production packages because development-only tooling does not ship with the deployed application. Tooling advisories are still reviewed during dependency updates.
 
@@ -112,8 +113,16 @@ The dependency audit is scoped to production packages because development-only t
 - PostgreSQL and Prisma foundation with workspace-aware models
 - Supabase email/password authentication and session refresh
 - Protected dashboard routes and persistent workspace onboarding
+- Authenticated, workspace-scoped lead CRUD API
+- Role-based lead permissions, validation, filtering, pagination, and activity history
 
-The interface still intentionally uses realistic browser demo lead data. Supabase Auth identities and PostgreSQL workspace records are real; dashboard leads will remain local until the lead-management API PR.
+The interface still intentionally uses realistic browser demo lead data. Supabase Auth identities, PostgreSQL workspace records, and API-created leads are real; the next PR will connect the dashboard to the API.
+
+## Lead API
+
+Authenticated users can access `/api/leads` and `/api/leads/:leadId`. Owner and admin roles can create, update, and archive leads; members can create and update; viewers have read-only access. All operations derive the workspace from the signed-in session rather than trusting a client-supplied workspace ID.
+
+See [docs/api.md](docs/api.md) for payloads, filters, response shapes, errors, and manual testing guidance.
 
 ## The product idea
 
@@ -156,7 +165,7 @@ LeadFlow helps a small B2B sales team turn anonymous interest into booked conver
 
 - **Web app:** Next.js + TypeScript
 - **Database:** PostgreSQL with Prisma
-- **Authentication:** Clerk or Auth.js
+- **Authentication:** Supabase Auth
 - **Jobs:** Trigger.dev or BullMQ
 - **Email:** Resend or Postmark
 - **Enrichment:** Apollo, People Data Labs, or Clearbit
@@ -189,6 +198,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── lib/
 │   └── types/
 ├── docs/
+│   ├── api.md
 │   ├── architecture.md
 │   ├── authentication.md
 │   ├── database.md
