@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a focused improvement to LeadFlow.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the observable result, not only the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] A user can...
+        - [ ] The system prevents...
+        - [ ] Tests cover...
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap area
+      options:
+        - Repository foundation
+        - Application foundation
+        - Lead capture and qualification
+        - Email automation
+        - Integrations and conversion
+        - Reporting and intelligence
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Security, privacy, or compliance considerations
+      description: Note any impact on authentication, lead data, consent, or outreach.
