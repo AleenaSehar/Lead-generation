@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLeads } from "@/components/leads/lead-provider";
 import type { LeadSource, NewLead } from "@/types/lead";
 
@@ -15,6 +15,8 @@ export function AddLeadModal({
 }) {
   const { addLead } = useLeads();
   const firstInput = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) firstInput.current?.focus();
@@ -25,18 +27,29 @@ export function AddLeadModal({
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [open, onClose]);
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const nameParts = String(form.get("name")).trim().split(/\s+/);
     const lead: NewLead = {
-      name: String(form.get("name")),
       email: String(form.get("email")),
-      company: String(form.get("company")),
+      firstName: nameParts.shift(),
+      lastName: nameParts.join(" ") || undefined,
+      companyName: String(form.get("company")),
       source: String(form.get("source")) as LeadSource,
     };
-    addLead(lead);
-    event.currentTarget.reset();
-    onAdded();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addLead(lead);
+      formElement.reset();
+      onAdded();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to add this lead.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -49,15 +62,18 @@ export function AddLeadModal({
         <button className="modal-close" type="button" onClick={onClose} aria-label="Close">×</button>
         <span className="modal-icon" aria-hidden="true">◎</span>
         <h2 id="modal-title">Add a new lead</h2>
-        <p>We’ll automatically calculate a score from the information you add.</p>
+        <p>Add a prospect to your workspace pipeline. You can qualify it from the leads page.</p>
         <form onSubmit={submit}>
           <label>Full name<input ref={firstInput} required name="name" placeholder="e.g. Jordan Lee" /></label>
           <label>Work email<input required name="email" type="email" placeholder="jordan@company.com" /></label>
           <div className="form-row">
             <label>Company<input required name="company" placeholder="Company name" /></label>
-            <label>Source<select name="source" defaultValue="Website"><option>Website</option><option>LinkedIn</option><option>Referral</option><option>Other</option></select></label>
+            <label>Source<select name="source" defaultValue="WEBSITE"><option value="WEBSITE">Website</option><option value="LINKEDIN">LinkedIn</option><option value="REFERRAL">Referral</option><option value="OTHER">Other</option></select></label>
           </div>
-          <button className="primary-button" type="submit">Add and score lead <span>→</span></button>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="primary-button" type="submit" disabled={submitting}>
+            {submitting ? "Adding lead…" : "Add lead"} <span>→</span>
+          </button>
         </form>
       </div>
     </div>

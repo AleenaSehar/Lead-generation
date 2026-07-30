@@ -37,9 +37,18 @@ Archived leads are excluded unless `status=ARCHIVED` is supplied.
     "pageSize": 20,
     "total": 0,
     "totalPages": 0
+  },
+  "summary": {
+    "total": 0,
+    "qualified": 0,
+    "converted": 0,
+    "byStatus": {},
+    "bySource": {}
   }
 }
 ```
+
+`pagination.total` describes the filtered result. `summary` always describes all active leads in the authorized workspace, so dashboard totals remain accurate while a filtered page is displayed.
 
 ## Create a lead
 
@@ -104,4 +113,4 @@ npm run db:migrate:deploy
 npm run dev
 ```
 
-The current dashboard does not call these endpoints yet. Use the browser developer console while signed in, or an API client that can reuse the Supabase session cookies. Automated coverage is available with `npm test`.
+The dashboard uses these endpoints for list, search, filtering, creation, status updates, and archival. Automated coverage is available with `npm test`.

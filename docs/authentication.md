@@ -20,6 +20,8 @@ LeadFlow answers:
 
 Supabase user IDs are stored in `User.supabaseUserId`. Email is synchronized for display and communication, but is not used as the permanent external identity key.
 
+Server requests establish identity from Supabase’s cryptographically verified JWT claims. The proxy refreshes expiring sessions and forwards updated cookies; application authorization then uses the verified subject claim to load the internal user and workspace membership. This avoids a second remote user lookup on every API request while continuing to reject unverified cookie data.
+
 ## Required configuration
 
 Create a hosted Supabase project for development and add these values to `.env`:

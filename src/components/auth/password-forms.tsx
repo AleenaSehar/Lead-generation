@@ -7,6 +7,7 @@ import {
   type AuthActionState,
 } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { PasswordField } from "@/components/auth/password-field";
 
 const initialState: AuthActionState = {};
 
@@ -28,8 +29,8 @@ export function UpdatePasswordForm() {
     <form className="auth-form" action={action}>
       {state.error && <div className="form-alert error" role="alert">{state.error}</div>}
       {state.message && <div className="form-alert success" role="status">{state.message}</div>}
-      <label>New password<input name="password" type="password" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters" /></label>
-      <label>Confirm password<input name="confirmation" type="password" autoComplete="new-password" required minLength={8} placeholder="Repeat your password" /></label>
+      <label>New password<PasswordField name="password" autoComplete="new-password" placeholder="At least 8 characters" /></label>
+      <label>Confirm password<PasswordField name="confirmation" autoComplete="new-password" placeholder="Repeat your password" /></label>
       <SubmitButton pendingLabel="Updating…">Update password <span>→</span></SubmitButton>
     </form>
   );

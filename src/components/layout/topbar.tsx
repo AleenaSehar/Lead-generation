@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function Topbar({ onMenu, onAddLead }: { onMenu: () => void; onAddLead: () => void }) {
+export function Topbar({
+  onMenu,
+  onAddLead,
+  canAddLead,
+}: {
+  onMenu: () => void;
+  onAddLead: () => void;
+  canAddLead: boolean;
+}) {
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -42,7 +50,7 @@ export function Topbar({ onMenu, onAddLead }: { onMenu: () => void; onAddLead: (
       </form>
       <div className="top-actions">
         <button className="icon-button" type="button" aria-label="Notifications">♢<i /></button>
-        <button className="primary-button" type="button" onClick={onAddLead}><span>＋</span>Add lead</button>
+        {canAddLead && <button className="primary-button" type="button" onClick={onAddLead}><span>＋</span>Add lead</button>}
       </div>
     </header>
   );
