@@ -20,7 +20,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 ## Phase 2 — lead capture and qualification
 
 - [x] Public and embeddable capture forms
-- [ ] CSV import with mapping and duplicate handling
+- [x] CSV import with mapping and duplicate handling
 - [ ] Explainable rule-based scoring
 - [ ] Lead activity timeline and audit trail
 

@@ -120,6 +120,7 @@ The dependency audit is scoped to production packages because development-only t
 - Database-backed dashboard totals, source metrics, and recent leads
 - Hosted and embeddable public lead-capture forms
 - Consent-aware submissions with duplicate handling and basic abuse controls
+- CSV lead imports with column mapping, preview, validation, and duplicate policies
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -130,6 +131,8 @@ Authenticated users can access `/api/leads` and `/api/leads/:leadId`. Owner and 
 See [docs/api.md](docs/api.md) for payloads, filters, response shapes, errors, and manual testing guidance.
 
 Capture forms are managed at `/forms`. Each active form has a public `/f/:publicId` URL and copyable iframe embed code. See [docs/capture-forms.md](docs/capture-forms.md).
+
+CSV imports start at `/leads/import`. Files are parsed and previewed locally before mapped rows are sent to the workspace API. See [docs/csv-import.md](docs/csv-import.md).
 
 ## The product idea
 
@@ -209,6 +212,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── architecture.md
 │   ├── authentication.md
 │   ├── capture-forms.md
+│   ├── csv-import.md
 │   ├── database.md
 │   └── roadmap.md
 ├── compose.yaml
