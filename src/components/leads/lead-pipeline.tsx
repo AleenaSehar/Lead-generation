@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useLeads } from "@/components/leads/lead-provider";
 import { PageHeading } from "@/components/shared/page-heading";
@@ -96,6 +97,7 @@ export function LeadPipeline() {
         eyebrow="CRM"
         title="Lead pipeline"
         description="Drag prospects between stages as they progress toward conversion."
+        action={<Link className="secondary-button" href="/leads/import">Import CSV</Link>}
       />
 
       <div className="lead-stats">

@@ -114,6 +114,12 @@ Common statuses are `400` for invalid JSON or validation, `401` for no authentic
 
 Public submission never accepts a workspace ID. The server resolves the workspace from the opaque form ID, validates consent, rate-limits repeated clients, upserts the email within that workspace, and creates submission and activity records transactionally.
 
+## CSV import
+
+`POST /api/leads/import` accepts up to 1,000 parsed CSV rows, a mapping from LeadFlow fields to CSV headers, and a duplicate strategy of `SKIP` or `UPDATE`. It requires an authenticated owner, admin, or member and derives the workspace from that session.
+
+The response reports total, created, updated, skipped, and failed counts plus row-numbered validation errors. Valid rows and their activity records are committed together; one invalid row does not discard other valid rows.
+
 ## Local verification
 
 Start PostgreSQL and the app, sign in through the browser, and use the dashboard session to make requests:
