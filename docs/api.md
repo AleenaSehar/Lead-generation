@@ -103,6 +103,17 @@ Errors have a stable shape:
 
 Common statuses are `400` for invalid JSON or validation, `401` for no authenticated session, `403` for a missing workspace or insufficient role, `404` for a lead outside the active workspace or an unknown ID, `409` for duplicate email, and `500` for an unexpected server error.
 
+## Capture forms
+
+- `GET /api/capture-forms` lists forms in the authenticated workspace.
+- `POST /api/capture-forms` creates a form for an owner or admin.
+- `PATCH /api/capture-forms/:formId` updates or pauses a workspace form.
+- `DELETE /api/capture-forms/:formId` archives a workspace form.
+- `GET /api/public/forms/:publicId` returns safe public form configuration.
+- `POST /api/public/forms/:publicId` accepts a public prospect submission.
+
+Public submission never accepts a workspace ID. The server resolves the workspace from the opaque form ID, validates consent, rate-limits repeated clients, upserts the email within that workspace, and creates submission and activity records transactionally.
+
 ## Local verification
 
 Start PostgreSQL and the app, sign in through the browser, and use the dashboard session to make requests:

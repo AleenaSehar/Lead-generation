@@ -9,6 +9,7 @@ import type { Viewer } from "@/components/layout/app-shell";
 const workspaceLinks = [
   { href: "/", icon: "⌂", label: "Overview" },
   { href: "/leads", icon: "◎", label: "Leads" },
+  { href: "/forms", icon: "▤", label: "Capture forms" },
   { href: "/automations", icon: "↯", label: "Automations" },
   { href: "/campaigns", icon: "◈", label: "Campaigns" },
 ];
