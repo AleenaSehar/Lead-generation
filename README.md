@@ -118,6 +118,8 @@ The dependency audit is scoped to production packages because development-only t
 - Authenticated, workspace-scoped lead CRUD API
 - Role-based lead permissions, validation, filtering, pagination, and activity history
 - Database-backed dashboard totals, source metrics, and recent leads
+- Hosted and embeddable public lead-capture forms
+- Consent-aware submissions with duplicate handling and basic abuse controls
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -126,6 +128,8 @@ Lead records shown in the dashboard are real workspace data. Charts, campaigns, 
 Authenticated users can access `/api/leads` and `/api/leads/:leadId`. Owner and admin roles can create, update, and archive leads; members can create and update; viewers have read-only access. All operations derive the workspace from the signed-in session rather than trusting a client-supplied workspace ID.
 
 See [docs/api.md](docs/api.md) for payloads, filters, response shapes, errors, and manual testing guidance.
+
+Capture forms are managed at `/forms`. Each active form has a public `/f/:publicId` URL and copyable iframe embed code. See [docs/capture-forms.md](docs/capture-forms.md).
 
 ## The product idea
 
@@ -204,6 +208,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── api.md
 │   ├── architecture.md
 │   ├── authentication.md
+│   ├── capture-forms.md
 │   ├── database.md
 │   └── roadmap.md
 ├── compose.yaml

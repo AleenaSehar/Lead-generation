@@ -38,6 +38,8 @@ Removing the named volume permanently deletes the local database and is intentio
 - `Workflow` and `WorkflowRun` represent automation definitions and executions.
 - `EmailSequence`, `EmailStep`, and `EmailEvent` support future outreach and delivery tracking.
 - `SuppressionEntry` blocks contact after unsubscribe, bounce, complaint, manual, or legal events.
+- `CaptureForm` stores workspace-owned public form configuration.
+- `CaptureSubmission` records each accepted submission, its resulting lead, and a one-way rate-limit fingerprint.
 
 Workspace identifiers are included in business-level unique constraints and indexes. Server code must still scope every protected query to a workspace authorized by the signed-in user.
 
