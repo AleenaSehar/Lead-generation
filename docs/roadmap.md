@@ -22,7 +22,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 - [x] Public and embeddable capture forms
 - [x] CSV import with mapping and duplicate handling
 - [x] Explainable rule-based scoring
-- [ ] Lead activity timeline and audit trail
+- [x] Lead activity timeline and audit trail
 
 **Outcome:** prospects enter automatically and receive transparent qualification scores.
 

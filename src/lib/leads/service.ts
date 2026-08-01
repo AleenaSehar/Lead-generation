@@ -12,6 +12,8 @@ import type {
   CreateLeadInput,
   LeadListQuery,
   UpdateLeadInput,
+  ActivityQuery,
+  LeadNoteInput,
 } from "@/lib/leads/validation";
 
 export interface LeadServiceContext {
@@ -105,19 +107,53 @@ export async function getLead(
   database: PrismaClient,
   context: LeadServiceContext,
   leadId: string,
+  activityQuery: ActivityQuery = { page: 1, pageSize: 15 },
 ) {
   assertLeadPermission(context.role, "read");
   const lead = await database.lead.findFirst({
     where: { id: leadId, workspaceId: context.workspaceId },
     include: {
       activities: {
-        orderBy: { occurredAt: "desc" },
-        take: 50,
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        skip: (activityQuery.page - 1) * activityQuery.pageSize,
+        take: activityQuery.pageSize,
+        include: { actor: { select: { id: true, name: true, email: true } } },
       },
     },
   });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
-  return lead;
+  const activityTotal = await database.leadActivity.count({
+    where: { leadId, workspaceId: context.workspaceId },
+  });
+  return {
+    ...lead,
+    activityPagination: {
+      page: activityQuery.page,
+      pageSize: activityQuery.pageSize,
+      total: activityTotal,
+      totalPages: Math.ceil(activityTotal / activityQuery.pageSize),
+    },
+  };
+}
+
+export async function addLeadNote(
+  database: PrismaClient,
+  context: LeadServiceContext,
+  leadId: string,
+  input: LeadNoteInput,
+) {
+  assertLeadPermission(context.role, "update");
+  const lead = await database.lead.findFirst({ where: { id: leadId, workspaceId: context.workspaceId } });
+  if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
+  const now = new Date();
+  return database.$transaction(async (transaction) => {
+    const activity = await transaction.leadActivity.create({
+      data: { workspaceId: context.workspaceId, leadId, actorId: context.userId, type: LeadActivityType.NOTE_ADDED, summary: input.note, metadata: { kind: "note" }, occurredAt: now },
+      include: { actor: { select: { id: true, name: true, email: true } } },
+    });
+    await transaction.lead.update({ where: { id: leadId }, data: { lastActivityAt: now } });
+    return activity;
+  });
 }
 
 export async function createLead(
@@ -223,17 +259,18 @@ export async function updateLead(
       data,
     });
 
-    const activities: Prisma.LeadActivityCreateManyInput[] = [
+    const detailFields = Object.keys(input).filter((field) => field !== "status" && field !== "score");
+    const activities: Prisma.LeadActivityCreateManyInput[] = detailFields.length ? [
       {
         workspaceId: context.workspaceId,
         leadId: current.id,
         actorId: context.userId,
         type: LeadActivityType.UPDATED,
         summary: "Lead details updated.",
-        metadata: { fields: Object.keys(input) },
+        metadata: { fields: detailFields },
         occurredAt: now,
       },
-    ];
+    ] : [];
 
     if (input.status && input.status !== current.status) {
       activities.push({
@@ -258,7 +295,7 @@ export async function updateLead(
       });
     }
 
-    await transaction.leadActivity.createMany({ data: activities });
+    if (activities.length) await transaction.leadActivity.createMany({ data: activities });
     return updated;
   });
 }
