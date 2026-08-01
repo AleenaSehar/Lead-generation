@@ -135,3 +135,10 @@ The dashboard uses these endpoints for list, search, filtering, creation, status
 ## Scoring rules
 
 Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.
+
+## Email delivery foundation
+
+- `POST /api/emails/send` accepts `leadId`, `subject`, `text`, and optional `html`. Owners, admins, and members may create an attempt. The lead must belong to the workspace, have an email and recorded consent, and not be suppressed.
+- `POST /api/webhooks/email/:provider` ingests provider events. It requires `x-leadflow-signature`, an HMAC-SHA256 signature of the exact raw body using `EMAIL_WEBHOOK_SECRET`.
+
+Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
