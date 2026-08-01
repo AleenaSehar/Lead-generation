@@ -36,7 +36,7 @@ Removing the named volume permanently deletes the local database and is intentio
 - `LeadActivity` provides an append-oriented prospect timeline and audit context.
 - `Campaign` groups acquisition or outreach work.
 - `Workflow` and `WorkflowRun` represent automation definitions and executions.
-- `EmailSequence`, `EmailStep`, and `EmailEvent` support future outreach and delivery tracking.
+- `EmailSequence`, `EmailStep`, and `EmailEvent` support outreach and delivery tracking. Provider event IDs are unique so webhook retries are idempotent.
 - `SuppressionEntry` blocks contact after unsubscribe, bounce, complaint, manual, or legal events.
 - `CaptureForm` stores workspace-owned public form configuration.
 - `CaptureSubmission` records each accepted submission, its resulting lead, and a one-way rate-limit fingerprint.

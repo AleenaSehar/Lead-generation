@@ -384,7 +384,9 @@ model EmailStep {
 model EmailEvent {
   id                String         @id @default(cuid())
   type              EmailEventType
+  provider          String         @default("mock")
   providerMessageId String?
+  providerEventId   String?        @unique
   metadata          Json?
   occurredAt        DateTime       @default(now())
   workspaceId       String
@@ -395,6 +397,7 @@ model EmailEvent {
   @@index([workspaceId, occurredAt])
   @@index([leadId, occurredAt])
   @@index([providerMessageId])
+  @@index([workspaceId, providerMessageId, occurredAt])
 }
 
 model SuppressionEntry {

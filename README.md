@@ -123,6 +123,7 @@ The dependency audit is scoped to production packages because development-only t
 - CSV lead imports with column mapping, preview, validation, and duplicate policies
 - Explainable workspace scoring rules with automatic and bulk recalculation
 - Lead detail drawer with attributed notes, score explanations, and paginated activity history
+- Mock-first email provider foundation with consent gates, signed webhooks, and idempotent delivery events
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -139,6 +140,8 @@ CSV imports start at `/leads/import`. Files are parsed and previewed locally bef
 Owners and admins configure transparent lead-scoring rules at `/settings`. See [docs/lead-scoring.md](docs/lead-scoring.md).
 
 Open **View details** on any pipeline card to review contact data, scoring reasons, and the complete lead audit timeline. See [docs/lead-activity.md](docs/lead-activity.md).
+
+Email delivery currently runs in safe mock mode: attempts are recorded but nothing is sent externally. See [docs/email-delivery.md](docs/email-delivery.md).
 
 ## The product idea
 
@@ -220,6 +223,9 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── capture-forms.md
 │   ├── csv-import.md
 │   ├── database.md
+│   ├── email-delivery.md
+│   ├── lead-activity.md
+│   ├── lead-scoring.md
 │   └── roadmap.md
 ├── compose.yaml
 ├── prisma.config.ts

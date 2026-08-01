@@ -119,6 +119,10 @@ export async function getLead(
         take: activityQuery.pageSize,
         include: { actor: { select: { id: true, name: true, email: true } } },
       },
+      emailEvents: {
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take: 20,
+      },
     },
   });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
