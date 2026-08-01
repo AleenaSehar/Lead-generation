@@ -182,7 +182,7 @@ export function LeadPipeline() {
                         </div>
                         <div className="lead-card-company">
                           <span>{lead.companyName || "No company"}</span>
-                          <b title="Lead score">✦ {lead.score}</b>
+                          <b className="lead-score" title={lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => `${rule.name}: ${rule.points > 0 ? "+" : ""}${rule.points}`).join("\n") : "No scoring rules matched"}>✦ {lead.score}<span className="score-tooltip">{lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => <small key={rule.id}>{rule.name} <em>{rule.points > 0 ? "+" : ""}{rule.points}</em></small>) : <small>No rules matched</small>}</span></b>
                         </div>
                         <footer>
                           <span>{formatLeadStatus(lead.source)}</span>

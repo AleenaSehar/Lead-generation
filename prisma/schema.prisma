@@ -102,6 +102,24 @@ enum CaptureFormStatus {
   ARCHIVED
 }
 
+enum ScoringRuleField {
+  SOURCE
+  STATUS
+  JOB_TITLE
+  COMPANY_NAME
+  COMPANY_DOMAIN
+  EMAIL
+  PHONE
+  CONSENT
+}
+
+enum ScoringRuleOperator {
+  EQUALS
+  CONTAINS
+  EXISTS
+  NOT_EXISTS
+}
+
 model User {
   id               String            @id @default(cuid())
   supabaseUserId   String?           @unique
@@ -134,6 +152,24 @@ model Workspace {
   suppressionEntries SuppressionEntry[]
   captureForms       CaptureForm[]
   captureSubmissions CaptureSubmission[]
+  scoringRules       ScoringRule[]
+}
+
+model ScoringRule {
+  id          String              @id @default(cuid())
+  name        String
+  field       ScoringRuleField
+  operator    ScoringRuleOperator
+  value       String?
+  points      Int
+  isActive    Boolean             @default(true)
+  position    Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  workspaceId String
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, isActive, position])
 }
 
 model WorkspaceMember {
