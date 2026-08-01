@@ -131,3 +131,6 @@ npm run dev
 ```
 
 The dashboard uses these endpoints for list, search, filtering, creation, status updates, and archival. Automated coverage is available with `npm test`.
+# Scoring rules
+
+Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.
