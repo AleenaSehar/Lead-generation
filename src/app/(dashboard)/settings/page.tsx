@@ -1,5 +1,7 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { ScoringManager } from "@/components/scoring/scoring-manager";
+import { requireWorkspace } from "@/lib/auth";
 
-export default function SettingsPage() {
-  return <PlaceholderPage icon="⚙" title="Settings" description="Workspace, team, billing, and notification preferences." />;
+export default async function SettingsPage() {
+  const { membership } = await requireWorkspace();
+  return <ScoringManager canManage={["OWNER", "ADMIN"].includes(membership.role)} />;
 }

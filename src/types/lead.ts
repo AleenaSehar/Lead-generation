@@ -24,6 +24,7 @@ export interface Lead {
   companyName: string | null;
   companyDomain: string | null;
   score: number;
+  scoreDetails: { version?: number; rawScore?: number; matchedRules?: { id: string; name: string; points: number }[] } | null;
   status: LeadStatus;
   source: LeadSource;
   consentAt: string | null;

@@ -96,6 +96,30 @@ enum SuppressionReason {
   LEGAL_REQUEST
 }
 
+enum CaptureFormStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ScoringRuleField {
+  SOURCE
+  STATUS
+  JOB_TITLE
+  COMPANY_NAME
+  COMPANY_DOMAIN
+  EMAIL
+  PHONE
+  CONSENT
+}
+
+enum ScoringRuleOperator {
+  EQUALS
+  CONTAINS
+  EXISTS
+  NOT_EXISTS
+}
+
 model User {
   id               String            @id @default(cuid())
   supabaseUserId   String?           @unique
@@ -108,6 +132,7 @@ model User {
   assignedLeads    Lead[]            @relation("LeadOwner")
   createdCampaigns Campaign[]        @relation("CampaignCreator")
   activities       LeadActivity[]    @relation("ActivityActor")
+  createdForms     CaptureForm[]     @relation("CaptureFormCreator")
 }
 
 model Workspace {
@@ -125,6 +150,26 @@ model Workspace {
   emailSequences     EmailSequence[]
   emailEvents        EmailEvent[]
   suppressionEntries SuppressionEntry[]
+  captureForms       CaptureForm[]
+  captureSubmissions CaptureSubmission[]
+  scoringRules       ScoringRule[]
+}
+
+model ScoringRule {
+  id          String              @id @default(cuid())
+  name        String
+  field       ScoringRuleField
+  operator    ScoringRuleOperator
+  value       String?
+  points      Int
+  isActive    Boolean             @default(true)
+  position    Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  workspaceId String
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, isActive, position])
 }
 
 model WorkspaceMember {
@@ -170,6 +215,7 @@ model Lead {
   activities     LeadActivity[]
   workflowRuns   WorkflowRun[]
   emailEvents    EmailEvent[]
+  captureSubmissions CaptureSubmission[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -177,6 +223,53 @@ model Lead {
   @@index([workspaceId, createdAt])
   @@index([ownerId])
   @@index([campaignId])
+}
+
+model CaptureForm {
+  id                 String            @id @default(cuid())
+  publicId           String            @unique @default(cuid())
+  name               String
+  title              String
+  description        String?
+  successMessage     String            @default("Thanks! We will be in touch soon.")
+  status             CaptureFormStatus @default(ACTIVE)
+  collectFirstName   Boolean           @default(true)
+  collectLastName    Boolean           @default(true)
+  collectCompanyName Boolean           @default(true)
+  collectJobTitle    Boolean           @default(false)
+  collectCompanyDomain Boolean         @default(false)
+  collectPhone       Boolean           @default(false)
+  collectMessage     Boolean           @default(true)
+  requireConsent     Boolean           @default(true)
+  consentText        String            @default("I agree to be contacted about this request.")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  workspaceId        String
+  createdById        String?
+  workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy          User?             @relation("CaptureFormCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  submissions        CaptureSubmission[]
+
+  @@index([workspaceId, status])
+  @@index([createdById])
+}
+
+model CaptureSubmission {
+  id          String      @id @default(cuid())
+  submittedAt DateTime    @default(now())
+  ipHash      String?
+  userAgent   String?
+  formId      String
+  workspaceId String
+  leadId      String?
+  form        CaptureForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead        Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([formId, submittedAt])
+  @@index([formId, ipHash, submittedAt])
+  @@index([workspaceId, submittedAt])
+  @@index([leadId])
 }
 
 model LeadActivity {

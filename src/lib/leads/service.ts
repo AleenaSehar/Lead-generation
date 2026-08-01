@@ -7,10 +7,13 @@ import {
 } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { assertLeadPermission } from "@/lib/leads/permissions";
+import { calculateLeadScore } from "@/lib/scoring/service";
 import type {
   CreateLeadInput,
   LeadListQuery,
   UpdateLeadInput,
+  ActivityQuery,
+  LeadNoteInput,
 } from "@/lib/leads/validation";
 
 export interface LeadServiceContext {
@@ -104,19 +107,53 @@ export async function getLead(
   database: PrismaClient,
   context: LeadServiceContext,
   leadId: string,
+  activityQuery: ActivityQuery = { page: 1, pageSize: 15 },
 ) {
   assertLeadPermission(context.role, "read");
   const lead = await database.lead.findFirst({
     where: { id: leadId, workspaceId: context.workspaceId },
     include: {
       activities: {
-        orderBy: { occurredAt: "desc" },
-        take: 50,
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        skip: (activityQuery.page - 1) * activityQuery.pageSize,
+        take: activityQuery.pageSize,
+        include: { actor: { select: { id: true, name: true, email: true } } },
       },
     },
   });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
-  return lead;
+  const activityTotal = await database.leadActivity.count({
+    where: { leadId, workspaceId: context.workspaceId },
+  });
+  return {
+    ...lead,
+    activityPagination: {
+      page: activityQuery.page,
+      pageSize: activityQuery.pageSize,
+      total: activityTotal,
+      totalPages: Math.ceil(activityTotal / activityQuery.pageSize),
+    },
+  };
+}
+
+export async function addLeadNote(
+  database: PrismaClient,
+  context: LeadServiceContext,
+  leadId: string,
+  input: LeadNoteInput,
+) {
+  assertLeadPermission(context.role, "update");
+  const lead = await database.lead.findFirst({ where: { id: leadId, workspaceId: context.workspaceId } });
+  if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
+  const now = new Date();
+  return database.$transaction(async (transaction) => {
+    const activity = await transaction.leadActivity.create({
+      data: { workspaceId: context.workspaceId, leadId, actorId: context.userId, type: LeadActivityType.NOTE_ADDED, summary: input.note, metadata: { kind: "note" }, occurredAt: now },
+      include: { actor: { select: { id: true, name: true, email: true } } },
+    });
+    await transaction.lead.update({ where: { id: leadId }, data: { lastActivityAt: now } });
+    return activity;
+  });
 }
 
 export async function createLead(
@@ -126,6 +163,13 @@ export async function createLead(
 ) {
   assertLeadPermission(context.role, "create");
   const now = new Date();
+  const rules = await database.scoringRule.findMany({ where: { workspaceId: context.workspaceId, isActive: true }, orderBy: { position: "asc" } });
+  const scoring = calculateLeadScore({
+    source: input.source, status: input.status, jobTitle: input.jobTitle ?? null,
+    companyName: input.companyName ?? null, companyDomain: input.companyDomain ?? null,
+    email: input.email ?? null, phone: input.phone ?? null,
+    consentAt: input.consentAt ? new Date(input.consentAt) : null,
+  }, rules);
 
   return database.$transaction(async (transaction) => {
     const lead = await transaction.lead.create({
@@ -141,7 +185,8 @@ export async function createLead(
         companyDomain: input.companyDomain,
         status: input.status,
         source: input.source,
-        score: input.score,
+        score: rules.length ? scoring.score : input.score,
+        scoreDetails: rules.length ? scoring.details : undefined,
         consentAt: input.consentAt ? new Date(input.consentAt) : null,
         consentSource: input.consentSource,
         customFields: jsonValue(input.customFields),
@@ -178,6 +223,17 @@ export async function updateLead(
   if (!current) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
 
   const now = new Date();
+  const rules = await database.scoringRule.findMany({ where: { workspaceId: context.workspaceId, isActive: true }, orderBy: { position: "asc" } });
+  const scoring = calculateLeadScore({
+    source: input.source ?? current.source, status: input.status ?? current.status,
+    jobTitle: input.jobTitle === undefined ? current.jobTitle : input.jobTitle,
+    companyName: input.companyName === undefined ? current.companyName : input.companyName,
+    companyDomain: input.companyDomain === undefined ? current.companyDomain : input.companyDomain,
+    email: input.email === undefined ? current.email : input.email,
+    phone: input.phone === undefined ? current.phone : input.phone,
+    consentAt: input.consentAt === undefined ? current.consentAt : input.consentAt ? new Date(input.consentAt) : null,
+  }, rules);
+  const nextScore = rules.length ? scoring.score : input.score;
   return database.$transaction(async (transaction) => {
     const data: Prisma.LeadUpdateInput = {
       ...(input.firstName !== undefined ? { firstName: input.firstName } : {}),
@@ -189,7 +245,8 @@ export async function updateLead(
       ...(input.companyDomain !== undefined ? { companyDomain: input.companyDomain } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.source !== undefined ? { source: input.source } : {}),
-      ...(input.score !== undefined ? { score: input.score } : {}),
+      ...(nextScore !== undefined ? { score: nextScore } : {}),
+      ...(rules.length ? { scoreDetails: scoring.details as Prisma.InputJsonValue } : {}),
       ...(input.consentAt !== undefined
         ? { consentAt: input.consentAt ? new Date(input.consentAt) : null }
         : {}),
@@ -202,17 +259,18 @@ export async function updateLead(
       data,
     });
 
-    const activities: Prisma.LeadActivityCreateManyInput[] = [
+    const detailFields = Object.keys(input).filter((field) => field !== "status" && field !== "score");
+    const activities: Prisma.LeadActivityCreateManyInput[] = detailFields.length ? [
       {
         workspaceId: context.workspaceId,
         leadId: current.id,
         actorId: context.userId,
         type: LeadActivityType.UPDATED,
         summary: "Lead details updated.",
-        metadata: { fields: Object.keys(input) },
+        metadata: { fields: detailFields },
         occurredAt: now,
       },
-    ];
+    ] : [];
 
     if (input.status && input.status !== current.status) {
       activities.push({
@@ -225,19 +283,19 @@ export async function updateLead(
         occurredAt: now,
       });
     }
-    if (input.score !== undefined && input.score !== current.score) {
+    if (nextScore !== undefined && nextScore !== current.score) {
       activities.push({
         workspaceId: context.workspaceId,
         leadId: current.id,
         actorId: context.userId,
         type: LeadActivityType.SCORE_CHANGED,
-        summary: `Lead score changed from ${current.score} to ${input.score}.`,
-        metadata: { from: current.score, to: input.score },
+        summary: `Lead score changed from ${current.score} to ${nextScore}.`,
+        metadata: { from: current.score, to: nextScore, matchedRules: rules.length ? scoring.details.matchedRules : undefined },
         occurredAt: now,
       });
     }
 
-    await transaction.leadActivity.createMany({ data: activities });
+    if (activities.length) await transaction.leadActivity.createMany({ data: activities });
     return updated;
   });
 }

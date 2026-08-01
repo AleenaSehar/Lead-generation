@@ -79,8 +79,12 @@ body {
 .auth-form input { width: 100%; height: 43px; padding: 0 13px; border: 1px solid #dfdde6; border-radius: 8px; outline: 0; color: var(--ink); background: white; font-size: 11px; }
 .auth-form input:focus { border-color: #8065ed; box-shadow: 0 0 0 3px #7657f615; }
 .password-field { position: relative; display: block !important; }
-.password-field input { padding-right: 62px; }
-.password-field button { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); padding: 5px 8px; border: 0; border-radius: 5px; color: #6848e9; background: #f0ecff; font-size: 9px; font-weight: 700; cursor: pointer; }
+.password-field input { padding-right: 48px; }
+.password-field button { position: absolute; top: 50%; right: 8px; width: 32px; height: 32px; display: grid; place-items: center; transform: translateY(-50%); padding: 0; border: 0; border-radius: 7px; color: #6848e9; background: transparent; cursor: pointer; transition: background .15s, color .15s; }
+.password-field button:hover { color: #4e2dcf; background: #f0ecff; }
+.password-field button:focus-visible { outline: 2px solid #7657f6; outline-offset: 2px; }
+.password-field button svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.password-field button .visibility-slash { stroke-width: 2; }
 .auth-submit { height: 44px; margin-top: 3px; }
 .auth-submit:disabled { cursor: wait; opacity: .7; transform: none; }
 .form-alert { padding: 11px 12px; border-radius: 8px; font-size: 10px; line-height: 1.5; }

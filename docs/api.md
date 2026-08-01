@@ -76,9 +76,10 @@ A successful create returns `201` with `{ "data": lead }`. A duplicate email in 
 
 ## Read, update, or archive one lead
 
-- `GET /api/leads/:leadId` returns the lead and its latest 50 activities.
+- `GET /api/leads/:leadId?page=1&pageSize=15` returns the lead, attributed activities, and activity pagination metadata.
 - `PATCH /api/leads/:leadId` accepts one or more create fields; unknown fields and empty payloads are rejected.
 - `DELETE /api/leads/:leadId` archives the lead and returns the archived record.
+- `POST /api/leads/:leadId/notes` accepts `{ "note": "..." }` and creates an attributed `NOTE_ADDED` activity. Owners, admins, and members may add notes; viewers are read-only.
 
 Updates automatically add an `UPDATED` activity. Status and score changes also add specific activity records. The lead write and activities are committed in one database transaction.
 
@@ -103,6 +104,23 @@ Errors have a stable shape:
 
 Common statuses are `400` for invalid JSON or validation, `401` for no authenticated session, `403` for a missing workspace or insufficient role, `404` for a lead outside the active workspace or an unknown ID, `409` for duplicate email, and `500` for an unexpected server error.
 
+## Capture forms
+
+- `GET /api/capture-forms` lists forms in the authenticated workspace.
+- `POST /api/capture-forms` creates a form for an owner or admin.
+- `PATCH /api/capture-forms/:formId` updates or pauses a workspace form.
+- `DELETE /api/capture-forms/:formId` archives a workspace form.
+- `GET /api/public/forms/:publicId` returns safe public form configuration.
+- `POST /api/public/forms/:publicId` accepts a public prospect submission.
+
+Public submission never accepts a workspace ID. The server resolves the workspace from the opaque form ID, validates consent, rate-limits repeated clients, upserts the email within that workspace, and creates submission and activity records transactionally.
+
+## CSV import
+
+`POST /api/leads/import` accepts up to 1,000 parsed CSV rows, a mapping from LeadFlow fields to CSV headers, and a duplicate strategy of `SKIP` or `UPDATE`. It requires an authenticated owner, admin, or member and derives the workspace from that session.
+
+The response reports total, created, updated, skipped, and failed counts plus row-numbered validation errors. Valid rows and their activity records are committed together; one invalid row does not discard other valid rows.
+
 ## Local verification
 
 Start PostgreSQL and the app, sign in through the browser, and use the dashboard session to make requests:
@@ -114,3 +132,6 @@ npm run dev
 ```
 
 The dashboard uses these endpoints for list, search, filtering, creation, status updates, and archival. Automated coverage is available with `npm test`.
+## Scoring rules
+
+Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.

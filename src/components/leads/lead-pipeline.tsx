@@ -1,11 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads } from "@/components/leads/lead-provider";
 import { PageHeading } from "@/components/shared/page-heading";
 import { formatLeadStatus, getInitials, getLeadName } from "@/lib/leads";
 import type { Lead, LeadStatus } from "@/types/lead";
+import { LeadDetailDrawer } from "@/components/leads/lead-detail-drawer";
 
 const columns: { status: Exclude<LeadStatus, "ARCHIVED">; label: string; tone: string }[] = [
   { status: "NEW", label: "New", tone: "blue" },
@@ -33,6 +35,9 @@ export function LeadPipeline() {
   const [dropTarget, setDropTarget] = useState<LeadStatus | null>(null);
   const [pendingLead, setPendingLead] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
+  const closeDetails = useCallback(() => setDetailLeadId(null), []);
+  const refreshDetails = useCallback(() => { void loadLeads(); }, [loadLeads]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -96,6 +101,7 @@ export function LeadPipeline() {
         eyebrow="CRM"
         title="Lead pipeline"
         description="Drag prospects between stages as they progress toward conversion."
+        action={<Link className="secondary-button" href="/leads/import">Import CSV</Link>}
       />
 
       <div className="lead-stats">
@@ -180,15 +186,15 @@ export function LeadPipeline() {
                         </div>
                         <div className="lead-card-company">
                           <span>{lead.companyName || "No company"}</span>
-                          <b title="Lead score">✦ {lead.score}</b>
+                          <b className="lead-score" title={lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => `${rule.name}: ${rule.points > 0 ? "+" : ""}${rule.points}`).join("\n") : "No scoring rules matched"}>✦ {lead.score}<span className="score-tooltip">{lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => <small key={rule.id}>{rule.name} <em>{rule.points > 0 ? "+" : ""}{rule.points}</em></small>) : <small>No rules matched</small>}</span></b>
                         </div>
                         <footer>
                           <span>{formatLeadStatus(lead.source)}</span>
-                          {canArchive && (
+                          <div className="lead-card-actions"><button type="button" onClick={() => setDetailLeadId(lead.id)}>View details</button>{canArchive && (
                             <button type="button" disabled={busy} onClick={() => void archive(lead.id)}>
                               {busy ? "Saving…" : "Archive"}
                             </button>
-                          )}
+                          )}</div>
                         </footer>
                       </article>
                     );
@@ -204,6 +210,7 @@ export function LeadPipeline() {
           </div>
         )}
       </article>
+      {detailLeadId && <LeadDetailDrawer leadId={detailLeadId} canAddNote={canUpdate} onClose={closeDetails} onChanged={refreshDetails} />}
     </section>
   );
 }
