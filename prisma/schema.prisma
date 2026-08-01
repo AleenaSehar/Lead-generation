@@ -88,6 +88,11 @@ enum EmailEventType {
   FAILED
 }
 
+enum EmailSequenceStatus {
+  DRAFT
+  ARCHIVED
+}
+
 enum SuppressionReason {
   UNSUBSCRIBED
   BOUNCED
@@ -357,6 +362,7 @@ model EmailSequence {
   id          String      @id @default(cuid())
   name        String
   description String?
+  status      EmailSequenceStatus @default(DRAFT)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   workspaceId String
@@ -364,7 +370,7 @@ model EmailSequence {
   workflow    Workflow?
   steps       EmailStep[]
 
-  @@index([workspaceId])
+  @@index([workspaceId, status])
 }
 
 model EmailStep {

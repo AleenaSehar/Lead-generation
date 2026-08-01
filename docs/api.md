@@ -142,3 +142,12 @@ Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/s
 - `POST /api/webhooks/email/:provider` ingests provider events. It requires `x-leadflow-signature`, an HMAC-SHA256 signature of the exact raw body using `EMAIL_WEBHOOK_SECRET`.
 
 Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
+
+## Email sequence drafts
+
+- `GET /api/email-sequences` lists active drafts with their ordered steps.
+- `POST /api/email-sequences` creates a draft.
+- `PATCH /api/email-sequences/:sequenceId` updates metadata and atomically replaces/reorders steps.
+- `DELETE /api/email-sequences/:sequenceId` archives the draft.
+
+Owners and admins may mutate sequences; members and viewers may list them. Each sequence supports up to 20 steps. Step positions are assigned by the server from array order, delay is `0–43,200` minutes, and these endpoints never activate or execute a sequence.
