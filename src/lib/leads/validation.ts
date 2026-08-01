@@ -51,6 +51,17 @@ export const leadListQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
 });
 
+export const activityQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(15),
+});
+
+export const leadNoteSchema = z.object({
+  note: z.string().trim().min(1, "Enter a note.").max(2000),
+}).strict();
+
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type LeadListQuery = z.infer<typeof leadListQuerySchema>;
+export type ActivityQuery = z.infer<typeof activityQuerySchema>;
+export type LeadNoteInput = z.infer<typeof leadNoteSchema>;

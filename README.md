@@ -122,6 +122,7 @@ The dependency audit is scoped to production packages because development-only t
 - Consent-aware submissions with duplicate handling and basic abuse controls
 - CSV lead imports with column mapping, preview, validation, and duplicate policies
 - Explainable workspace scoring rules with automatic and bulk recalculation
+- Lead detail drawer with attributed notes, score explanations, and paginated activity history
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -136,6 +137,8 @@ Capture forms are managed at `/forms`. Each active form has a public `/f/:public
 CSV imports start at `/leads/import`. Files are parsed and previewed locally before mapped rows are sent to the workspace API. See [docs/csv-import.md](docs/csv-import.md).
 
 Owners and admins configure transparent lead-scoring rules at `/settings`. See [docs/lead-scoring.md](docs/lead-scoring.md).
+
+Open **View details** on any pipeline card to review contact data, scoring reasons, and the complete lead audit timeline. See [docs/lead-activity.md](docs/lead-activity.md).
 
 ## The product idea
 

@@ -2,11 +2,12 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads } from "@/components/leads/lead-provider";
 import { PageHeading } from "@/components/shared/page-heading";
 import { formatLeadStatus, getInitials, getLeadName } from "@/lib/leads";
 import type { Lead, LeadStatus } from "@/types/lead";
+import { LeadDetailDrawer } from "@/components/leads/lead-detail-drawer";
 
 const columns: { status: Exclude<LeadStatus, "ARCHIVED">; label: string; tone: string }[] = [
   { status: "NEW", label: "New", tone: "blue" },
@@ -34,6 +35,9 @@ export function LeadPipeline() {
   const [dropTarget, setDropTarget] = useState<LeadStatus | null>(null);
   const [pendingLead, setPendingLead] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
+  const closeDetails = useCallback(() => setDetailLeadId(null), []);
+  const refreshDetails = useCallback(() => { void loadLeads(); }, [loadLeads]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -186,11 +190,11 @@ export function LeadPipeline() {
                         </div>
                         <footer>
                           <span>{formatLeadStatus(lead.source)}</span>
-                          {canArchive && (
+                          <div className="lead-card-actions"><button type="button" onClick={() => setDetailLeadId(lead.id)}>View details</button>{canArchive && (
                             <button type="button" disabled={busy} onClick={() => void archive(lead.id)}>
                               {busy ? "Saving…" : "Archive"}
                             </button>
-                          )}
+                          )}</div>
                         </footer>
                       </article>
                     );
@@ -206,6 +210,7 @@ export function LeadPipeline() {
           </div>
         )}
       </article>
+      {detailLeadId && <LeadDetailDrawer leadId={detailLeadId} canAddNote={canUpdate} onClose={closeDetails} onChanged={refreshDetails} />}
     </section>
   );
 }

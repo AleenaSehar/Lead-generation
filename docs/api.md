@@ -76,9 +76,10 @@ A successful create returns `201` with `{ "data": lead }`. A duplicate email in 
 
 ## Read, update, or archive one lead
 
-- `GET /api/leads/:leadId` returns the lead and its latest 50 activities.
+- `GET /api/leads/:leadId?page=1&pageSize=15` returns the lead, attributed activities, and activity pagination metadata.
 - `PATCH /api/leads/:leadId` accepts one or more create fields; unknown fields and empty payloads are rejected.
 - `DELETE /api/leads/:leadId` archives the lead and returns the archived record.
+- `POST /api/leads/:leadId/notes` accepts `{ "note": "..." }` and creates an attributed `NOTE_ADDED` activity. Owners, admins, and members may add notes; viewers are read-only.
 
 Updates automatically add an `UPDATED` activity. Status and score changes also add specific activity records. The lead write and activities are committed in one database transaction.
 
@@ -131,6 +132,6 @@ npm run dev
 ```
 
 The dashboard uses these endpoints for list, search, filtering, creation, status updates, and archival. Automated coverage is available with `npm test`.
-# Scoring rules
+## Scoring rules
 
 Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.

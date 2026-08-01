@@ -12,6 +12,7 @@ import {
 import { ApiError, normalizeApiError } from "@/lib/api/errors";
 import {
   archiveLead,
+  addLeadNote,
   createLead,
   getLead,
   listLeads,
@@ -145,6 +146,22 @@ describe("lead service integration", () => {
     });
   });
 
+  it("adds attributed notes and paginates the audit timeline", async () => {
+    const lead = await createLead(database, owner, {
+      email: `notes-${runId}@example.test`, status: LeadStatus.NEW, source: LeadSourceType.MANUAL, score: 0,
+    });
+    const note = await addLeadNote(database, member, lead.id, { note: "Discussed the evaluation timeline." });
+    expect(note.type).toBe(LeadActivityType.NOTE_ADDED);
+    expect(note.actor?.id).toBe(member.userId);
+    const firstPage = await getLead(database, viewer, lead.id, { page: 1, pageSize: 1 });
+    expect(firstPage.activities).toHaveLength(1);
+    expect(firstPage.activities[0].summary).toBe("Discussed the evaluation timeline.");
+    expect(firstPage.activityPagination.total).toBe(2);
+    expect(firstPage.activityPagination.totalPages).toBe(2);
+    await expect(addLeadNote(database, viewer, lead.id, { note: "Not allowed" })).rejects.toMatchObject({ status: 403 });
+    await expect(addLeadNote(database, otherOwner, lead.id, { note: "Wrong workspace" })).rejects.toMatchObject({ status: 404 });
+  });
+
   it("tracks changes, filters lists, and archives without deleting", async () => {
     const lead = await createLead(database, owner, {
       email: `search-${runId}@example.test`,
@@ -170,11 +187,11 @@ describe("lead service integration", () => {
     expect(detailed.activities.map((activity) => activity.type)).toEqual(
       expect.arrayContaining([
         LeadActivityType.CREATED,
-        LeadActivityType.UPDATED,
         LeadActivityType.STATUS_CHANGED,
         LeadActivityType.SCORE_CHANGED,
       ]),
     );
+    expect(detailed.activities.map((activity) => activity.type)).not.toContain(LeadActivityType.UPDATED);
 
     await archiveLead(database, owner, lead.id);
     const defaultList = await listLeads(database, owner, leadListQuerySchema.parse({}));
