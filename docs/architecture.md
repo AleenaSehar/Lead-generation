@@ -65,6 +65,8 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 3. **Provider independence:** Business logic does not depend directly on one external vendor.
 4. **Safe retries:** Webhooks and background jobs tolerate duplicate delivery.
 5. **Privacy by design:** Collect only required data and support suppression, export, and deletion.
+
+Outbound messages carry encrypted, authenticated unsubscribe tokens. Public unsubscribe actions and verified bounce/complaint webhooks converge on one idempotent suppression service, which records audit activity and cancels unfinished sequence steps transactionally.
 6. **Observable operations:** Important workflow transitions and external calls create structured events.
 7. **Incremental delivery:** Each feature is developed and reviewed independently against `dev`.
 

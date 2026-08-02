@@ -126,6 +126,7 @@ The dependency audit is scoped to production packages because development-only t
 - Mock-first email provider foundation with consent gates, signed webhooks, and idempotent delivery events
 - Draft-only multi-step email sequence builder with ordered delays and atomic reordering
 - Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
+- Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -148,6 +149,8 @@ Email delivery currently runs in safe mock mode: attempts are recorded but nothi
 Email sequence drafts are authored at `/automations`. They can only be processed manually through the mock workflow engine; no automatic or real sending is enabled. See [docs/email-sequences.md](docs/email-sequences.md).
 
 Consented leads can be enrolled and manually processed from their detail drawer. Processing remains mock-only and requires an explicit click. See [docs/workflow-execution.md](docs/workflow-execution.md).
+
+Every generated email includes an encrypted, authenticated unsubscribe URL. Owners and admins manage blocked recipients under **Settings → Email safety**. See [docs/email-safety.md](docs/email-safety.md).
 
 ## The product idea
 
@@ -230,6 +233,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── csv-import.md
 │   ├── database.md
 │   ├── email-delivery.md
+│   ├── email-safety.md
 │   ├── email-sequences.md
 │   ├── lead-activity.md
 │   ├── lead-scoring.md

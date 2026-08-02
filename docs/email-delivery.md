@@ -26,4 +26,4 @@ Every callback must have a unique provider `eventId`. Repeated delivery of the s
 
 ## Current boundary
 
-This foundation does not provide a production provider, background execution, or unsubscribe UI. Sequence authoring now exists separately, but drafts cannot run or send until workflow and compliance controls are complete.
+Every generated message now includes a signed public unsubscribe URL. Bounce, complaint, and unsubscribe webhooks add workspace suppressions and stop unfinished sequence work. See [email-safety.md](email-safety.md). A production provider and automatic background scheduler are still intentionally unavailable.

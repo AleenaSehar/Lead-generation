@@ -31,7 +31,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 - [x] Email provider abstraction and delivery webhooks
 - [x] Multi-step sequence builder
 - [x] Idempotent workflow execution engine
-- [ ] Consent, unsubscribe, suppression, bounce, and complaint controls
+- [x] Consent, unsubscribe, suppression, bounce, and complaint controls
 
 **Outcome:** qualified, contactable leads can enter reliable and permission-aware sequences.
 
