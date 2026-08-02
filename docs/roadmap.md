@@ -37,7 +37,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 
 ## Phase 4 — integrations and conversion
 
-- [ ] Calendar booking
+- [x] Calendar booking
 - [ ] CRM synchronization
 - [ ] Email reply detection
 - [ ] Team notifications

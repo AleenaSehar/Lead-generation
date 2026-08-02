@@ -121,6 +121,11 @@ enum SuppressionReason {
   LEGAL_REQUEST
 }
 
+enum MeetingStatus {
+  BOOKED
+  CANCELLED
+}
+
 enum CaptureFormStatus {
   ACTIVE
   INACTIVE
@@ -158,6 +163,7 @@ model User {
   createdCampaigns Campaign[]        @relation("CampaignCreator")
   activities       LeadActivity[]    @relation("ActivityActor")
   createdForms     CaptureForm[]     @relation("CaptureFormCreator")
+  createdBookingPages BookingPage[]  @relation("BookingPageCreator")
 }
 
 model Workspace {
@@ -179,6 +185,8 @@ model Workspace {
   captureSubmissions CaptureSubmission[]
   scoringRules       ScoringRule[]
   sequenceEnrollments SequenceEnrollment[]
+  bookingPages       BookingPage[]
+  meetings           Meeting[]
 }
 
 model ScoringRule {
@@ -243,6 +251,7 @@ model Lead {
   emailEvents    EmailEvent[]
   captureSubmissions CaptureSubmission[]
   sequenceEnrollments SequenceEnrollment[]
+  meetings       Meeting[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -250,6 +259,53 @@ model Lead {
   @@index([workspaceId, createdAt])
   @@index([ownerId])
   @@index([campaignId])
+}
+
+model BookingPage {
+  id               String    @id @default(cuid())
+  publicId         String    @unique @default(cuid())
+  title            String    @default("Book a meeting")
+  description      String?
+  durationMinutes  Int       @default(30)
+  bufferMinutes    Int       @default(0)
+  minimumNoticeHours Int     @default(2)
+  maximumAdvanceDays Int     @default(30)
+  timeZone         String    @default("UTC")
+  availability     Json
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  workspaceId      String    @unique
+  createdById      String?
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy        User?     @relation("BookingPageCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  meetings         Meeting[]
+
+  @@index([createdById])
+}
+
+model Meeting {
+  id             String        @id @default(cuid())
+  status         MeetingStatus @default(BOOKED)
+  startAt        DateTime
+  endAt          DateTime
+  attendeeName   String
+  attendeeEmail  String
+  attendeeTimeZone String
+  notes          String?
+  cancelledAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  workspaceId    String
+  bookingPageId  String
+  leadId         String
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bookingPage    BookingPage   @relation(fields: [bookingPageId], references: [id], onDelete: Cascade)
+  lead           Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingPageId, startAt])
+  @@index([workspaceId, startAt])
+  @@index([leadId, startAt])
 }
 
 model CaptureForm {

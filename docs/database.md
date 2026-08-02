@@ -39,6 +39,7 @@ Removing the named volume permanently deletes the local database and is intentio
 - `EmailSequence` stores draft/archive state, while ordered `EmailStep` records store subjects, plain-text bodies, and delays. `EmailEvent` tracks delivery; provider event IDs are unique so webhook retries are idempotent.
 - `SequenceEnrollment` snapshots an enrolled sequence and tracks its lifecycle. `SequenceStepRun` stores immutable email content, schedule, lease, attempts, and a unique email idempotency key.
 - `SuppressionEntry` blocks contact after unsubscribe, bounce, complaint, manual, or legal events. Creating an entry also cancels unfinished sequence enrollment steps for the matching workspace lead.
+- `BookingPage` stores workspace availability and public scheduling rules; `Meeting` stores conflict-protected UTC reservations linked to leads.
 - `CaptureForm` stores workspace-owned public form configuration.
 - `CaptureSubmission` records each accepted submission, its resulting lead, and a one-way rate-limit fingerprint.
 

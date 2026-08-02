@@ -11,6 +11,7 @@ const workspaceLinks = [
   { href: "/leads", icon: "◎", label: "Leads" },
   { href: "/forms", icon: "▤", label: "Capture forms" },
   { href: "/automations", icon: "↯", label: "Automations" },
+  { href: "/bookings", icon: "◷", label: "Meetings" },
   { href: "/campaigns", icon: "◈", label: "Campaigns" },
 ];
 
