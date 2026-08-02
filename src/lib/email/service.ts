@@ -1,12 +1,14 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-import { EmailEventType, LeadActivityType } from "@/generated/prisma/enums";
+import { EmailEventType, LeadActivityType, SuppressionReason } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { getEmailFrom } from "@/lib/email/config";
 import type { EmailProvider } from "@/lib/email/provider";
 import type { EmailWebhookInput, SendEmailInput } from "@/lib/email/validation";
 import { assertLeadPermission } from "@/lib/leads/permissions";
 import type { LeadServiceContext } from "@/lib/leads/service";
+import { suppressEmail } from "@/lib/suppressions/service";
+import { createUnsubscribeUrl } from "@/lib/suppressions/token";
 
 export async function sendLeadEmail(database: PrismaClient, provider: EmailProvider, context: LeadServiceContext, input: SendEmailInput, options: { idempotencyKey?: string } = {}) {
   assertLeadPermission(context.role, "update");
@@ -24,7 +26,10 @@ export async function sendLeadEmail(database: PrismaClient, provider: EmailProvi
     data: { workspaceId: context.workspaceId, leadId: lead.id, type: EmailEventType.QUEUED, provider: provider.name, idempotencyKey: options.idempotencyKey, metadata: { recipient: lead.email, from: getEmailFrom(), subject: input.subject } },
   });
   try {
-    const result = await provider.send({ to: lead.email, from: getEmailFrom(), subject: input.subject, text: input.text, html: input.html, idempotencyKey: queued.id });
+    const unsubscribeUrl = createUnsubscribeUrl({ workspaceId: context.workspaceId, leadId: lead.id, email: lead.email });
+    const text = `${input.text}\n\nUnsubscribe: ${unsubscribeUrl}`;
+    const html = input.html ? `${input.html}<p><a href="${unsubscribeUrl}">Unsubscribe</a></p>` : undefined;
+    const result = await provider.send({ to: lead.email, from: getEmailFrom(), subject: input.subject, text, html, idempotencyKey: queued.id });
     await database.$transaction([
       database.emailEvent.update({ where: { id: queued.id }, data: { providerMessageId: result.messageId } }),
       database.emailEvent.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, type: EmailEventType.SENT, provider: result.provider, providerMessageId: result.messageId, occurredAt: result.acceptedAt, metadata: { queuedEventId: queued.id, mock: result.provider === "mock" } } }),
@@ -39,11 +44,15 @@ export async function sendLeadEmail(database: PrismaClient, provider: EmailProvi
 
 export async function ingestEmailWebhook(database: PrismaClient, provider: string, input: EmailWebhookInput) {
   const duplicate = await database.emailEvent.findUnique({ where: { providerEventId: input.eventId } });
-  if (duplicate) return { event: duplicate, duplicate: true };
+  if (duplicate) {
+    await applyWebhookSuppression(database, provider, input, duplicate.workspaceId, duplicate.leadId);
+    return { event: duplicate, duplicate: true };
+  }
   const origin = await database.emailEvent.findFirst({ where: { provider, providerMessageId: input.messageId }, orderBy: { occurredAt: "asc" } });
   if (!origin) throw new ApiError(404, "EMAIL_MESSAGE_NOT_FOUND", "The provider message was not found.");
   try {
     const event = await database.emailEvent.create({ data: { workspaceId: origin.workspaceId, leadId: origin.leadId, type: input.type, provider, providerMessageId: input.messageId, providerEventId: input.eventId, occurredAt: new Date(input.occurredAt), metadata: (input.metadata ?? {}) as Prisma.InputJsonValue } });
+    await applyWebhookSuppression(database, provider, input, origin.workspaceId, origin.leadId);
     return { event, duplicate: false };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -51,4 +60,11 @@ export async function ingestEmailWebhook(database: PrismaClient, provider: strin
     }
     throw error;
   }
+}
+
+async function applyWebhookSuppression(database: PrismaClient, provider: string, input: EmailWebhookInput, workspaceId: string, leadId: string | null) {
+  const reason = input.type === EmailEventType.BOUNCED ? SuppressionReason.BOUNCED : input.type === EmailEventType.COMPLAINED ? SuppressionReason.COMPLAINED : input.type === EmailEventType.UNSUBSCRIBED ? SuppressionReason.UNSUBSCRIBED : null;
+  if (!reason || !leadId) return;
+  const lead = await database.lead.findUnique({ where: { id: leadId } });
+  if (lead?.email) await suppressEmail(database, { workspaceId, leadId, email: lead.email, reason, details: `Reported by ${provider} webhook ${input.eventId}.` }, new Date(input.occurredAt));
 }

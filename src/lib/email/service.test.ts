@@ -70,4 +70,15 @@ describe("email delivery foundation", () => {
     expect((await ingestEmailWebhook(database, "mock", input)).duplicate).toBe(true);
     expect(await database.emailEvent.count({ where: { providerEventId: input.eventId } })).toBe(1);
   });
+
+  it("suppresses a recipient after a bounce webhook", async () => {
+    const target = await lead(`bounce-${runId}@example.test`);
+    const sent = await sendLeadEmail(database, provider, owner, { leadId: target.id, subject: "Bounce", text: "Test" });
+    const input = { eventId: `bounce-event-${runId}`, messageId: sent.providerMessageId, type: EmailEventType.BOUNCED, occurredAt: new Date().toISOString(), metadata: { reason: "mailbox unavailable" } };
+    await ingestEmailWebhook(database, "mock", input);
+    await ingestEmailWebhook(database, "mock", input);
+    expect(await database.suppressionEntry.findUnique({ where: { workspaceId_email: { workspaceId, email: target.email! } } })).toMatchObject({ reason: SuppressionReason.BOUNCED });
+    expect(await database.leadActivity.count({ where: { leadId: target.id, type: "EMAIL_BOUNCED" } })).toBe(1);
+    await expect(sendLeadEmail(database, provider, owner, { leadId: target.id, subject: "Blocked", text: "No" })).rejects.toMatchObject({ code: "EMAIL_SUPPRESSED" });
+  });
 });

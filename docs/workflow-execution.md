@@ -20,6 +20,8 @@ Each step has a stable email idempotency key. Retries reuse that key, allowing t
 
 Before every step, the engine rechecks the lead. Missing email or consent, suppression, or archival cancels the enrollment and every remaining step. Owners/admins can also cancel manually. Provider errors mark the step and enrollment failed; processing again retries only that failed step.
 
+Creating a suppression from Settings, a public unsubscribe, or a bounce/complaint webhook proactively cancels all unfinished work for the matching lead. Removing the suppression later never restarts those enrollments.
+
 ## Manual verification
 
 1. Create a sequence whose first step has a zero-minute delay.
