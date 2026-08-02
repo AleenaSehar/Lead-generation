@@ -135,3 +135,37 @@ The dashboard uses these endpoints for list, search, filtering, creation, status
 ## Scoring rules
 
 Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.
+
+## Email delivery foundation
+
+- `POST /api/emails/send` accepts `leadId`, `subject`, `text`, and optional `html`. Owners, admins, and members may create an attempt. The lead must belong to the workspace, have an email and recorded consent, and not be suppressed.
+- `POST /api/webhooks/email/:provider` ingests provider events. It requires `x-leadflow-signature`, an HMAC-SHA256 signature of the exact raw body using `EMAIL_WEBHOOK_SECRET`.
+
+### Email safety
+
+- `GET /api/suppressions` lists workspace suppression entries for an authenticated member.
+- `POST /api/suppressions` creates or updates a suppression. Owners and admins only.
+- `DELETE /api/suppressions/:suppressionId` removes an entry. It does not restore consent or cancelled workflows.
+- `POST /api/public/unsubscribe/:token` applies a signed recipient preference without authentication and is safe to retry.
+
+Verified bounce, complaint, and unsubscribe webhooks automatically suppress the recipient and stop unfinished sequence work.
+
+Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
+
+## Email sequence drafts
+
+- `GET /api/email-sequences` lists active drafts with their ordered steps.
+- `POST /api/email-sequences` creates a draft.
+- `PATCH /api/email-sequences/:sequenceId` updates metadata and atomically replaces/reorders steps.
+- `DELETE /api/email-sequences/:sequenceId` archives the draft.
+
+Owners and admins may mutate sequences; members and viewers may list them. Each sequence supports up to 20 steps. Step positions are assigned by the server from array order, delay is `0–43,200` minutes, and these endpoints never activate or execute a sequence.
+
+## Sequence enrollment and manual processing
+
+- `POST /api/sequence-enrollments` snapshots a sequence into a lead enrollment. It accepts `leadId`, `emailSequenceId`, and an optional client idempotency key.
+- `GET /api/sequence-enrollments?leadId=:leadId` lists the latest 20 enrollments for a workspace lead.
+- `POST /api/sequence-enrollments/:enrollmentId/process` claims and processes one due step.
+- `DELETE /api/sequence-enrollments/:enrollmentId` cancels pending work.
+
+Owners and admins manage execution; all workspace roles may view a lead's history. Processing rechecks email, consent, suppression, and archive status. Concurrent claims use a database lease, and each step uses a stable email idempotency key across retries.

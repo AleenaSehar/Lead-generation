@@ -2,7 +2,7 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, the authorized lead API, and the lead dashboard are persistent. Campaign, automation, and chart content remains demonstrative until those phases are implemented.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, the authorized lead API, lead dashboard, capture, scoring, audit history, email events, and sequence drafts are persistent. Campaign and chart content remains demonstrative until those phases are implemented.
 
 The database schema, migrations, identity verification, workspace authorization, lead validation, and role enforcement are real, but the application is not yet a complete production data system. It has no team invitations, email delivery, enrichment, or background workflow execution.
 
@@ -61,9 +61,12 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 
 1. **Server-enforced isolation:** Every protected query is scoped to an authorized workspace.
 2. **Explainable automation:** Scores and workflow decisions expose the rules that produced them.
+3. **Idempotent execution:** enrollment snapshots, database leases, and stable step keys make repeated processing safe.
 3. **Provider independence:** Business logic does not depend directly on one external vendor.
 4. **Safe retries:** Webhooks and background jobs tolerate duplicate delivery.
 5. **Privacy by design:** Collect only required data and support suppression, export, and deletion.
+
+Outbound messages carry encrypted, authenticated unsubscribe tokens. Public unsubscribe actions and verified bounce/complaint webhooks converge on one idempotent suppression service, which records audit activity and cancels unfinished sequence steps transactionally.
 6. **Observable operations:** Important workflow transitions and external calls create structured events.
 7. **Incremental delivery:** Each feature is developed and reviewed independently against `dev`.
 

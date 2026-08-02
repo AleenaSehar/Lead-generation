@@ -119,14 +119,20 @@ export async function getLead(
         take: activityQuery.pageSize,
         include: { actor: { select: { id: true, name: true, email: true } } },
       },
+      emailEvents: {
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take: 20,
+      },
     },
   });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
-  const activityTotal = await database.leadActivity.count({
-    where: { leadId, workspaceId: context.workspaceId },
-  });
+  const [activityTotal, suppression] = await Promise.all([
+    database.leadActivity.count({ where: { leadId, workspaceId: context.workspaceId } }),
+    lead.email ? database.suppressionEntry.findUnique({ where: { workspaceId_email: { workspaceId: context.workspaceId, email: lead.email.toLowerCase() } } }) : null,
+  ]);
   return {
     ...lead,
+    suppression,
     activityPagination: {
       page: activityQuery.page,
       pageSize: activityQuery.pageSize,

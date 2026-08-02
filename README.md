@@ -123,6 +123,10 @@ The dependency audit is scoped to production packages because development-only t
 - CSV lead imports with column mapping, preview, validation, and duplicate policies
 - Explainable workspace scoring rules with automatic and bulk recalculation
 - Lead detail drawer with attributed notes, score explanations, and paginated activity history
+- Mock-first email provider foundation with consent gates, signed webhooks, and idempotent delivery events
+- Draft-only multi-step email sequence builder with ordered delays and atomic reordering
+- Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
+- Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -139,6 +143,14 @@ CSV imports start at `/leads/import`. Files are parsed and previewed locally bef
 Owners and admins configure transparent lead-scoring rules at `/settings`. See [docs/lead-scoring.md](docs/lead-scoring.md).
 
 Open **View details** on any pipeline card to review contact data, scoring reasons, and the complete lead audit timeline. See [docs/lead-activity.md](docs/lead-activity.md).
+
+Email delivery currently runs in safe mock mode: attempts are recorded but nothing is sent externally. See [docs/email-delivery.md](docs/email-delivery.md).
+
+Email sequence drafts are authored at `/automations`. They can only be processed manually through the mock workflow engine; no automatic or real sending is enabled. See [docs/email-sequences.md](docs/email-sequences.md).
+
+Consented leads can be enrolled and manually processed from their detail drawer. Processing remains mock-only and requires an explicit click. See [docs/workflow-execution.md](docs/workflow-execution.md).
+
+Every generated email includes an encrypted, authenticated unsubscribe URL. Owners and admins manage blocked recipients under **Settings → Email safety**. See [docs/email-safety.md](docs/email-safety.md).
 
 ## The product idea
 
@@ -220,6 +232,12 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── capture-forms.md
 │   ├── csv-import.md
 │   ├── database.md
+│   ├── email-delivery.md
+│   ├── email-safety.md
+│   ├── email-sequences.md
+│   ├── lead-activity.md
+│   ├── lead-scoring.md
+│   ├── workflow-execution.md
 │   └── roadmap.md
 ├── compose.yaml
 ├── prisma.config.ts
