@@ -5,7 +5,7 @@ import { useLeads } from "@/components/leads/lead-provider";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { formatRelativeTime, getInitials, getLeadName } from "@/lib/leads";
 
-export function Overview() {
+export function Overview({ upcomingMeetings }: { upcomingMeetings: { id: string; startAt: string; attendeeName: string; attendeeEmail: string }[] }) {
   const { leads, summary, loading, error, loadLeads } = useLeads();
   const qualificationRate = summary.total
     ? Math.round((summary.qualified / summary.total) * 100)
@@ -102,13 +102,12 @@ export function Overview() {
 
         <article className="panel automation-panel">
           <div className="panel-header">
-            <div><h2>Active automations</h2><p>Workflows running right now</p></div>
-            <Link className="text-button" href="/automations">Manage <span>→</span></Link>
+            <div><h2>Upcoming meetings</h2><p>Conversations booked with your team</p></div>
+            <Link className="text-button" href="/bookings">Manage <span>→</span></Link>
           </div>
           <div className="automation-list">
-            <div><span className="automation-icon email">✉</span><section><strong>Welcome sequence</strong><small>Trigger: New lead captured</small></section><em>Active</em><b>128 sent</b></div>
-            <div><span className="automation-icon score">✦</span><section><strong>Lead scoring</strong><small>Trigger: Lead activity</small></section><em>Active</em><b>84 scored</b></div>
-            <div><span className="automation-icon notify">♢</span><section><strong>Hot lead alert</strong><small>Trigger: Score above 80</small></section><em>Active</em><b>16 alerts</b></div>
+            {upcomingMeetings.map((meeting) => <div key={meeting.id}><span className="automation-icon email">◷</span><section><strong>{meeting.attendeeName}</strong><small>{meeting.attendeeEmail}</small></section><em>Booked</em><b>{new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(meeting.startAt))}</b></div>)}
+            {!upcomingMeetings.length && <div className="error-state">No upcoming meetings yet. Share your booking link to get started.</div>}
           </div>
         </article>
       </div>

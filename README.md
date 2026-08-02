@@ -127,6 +127,7 @@ The dependency audit is scoped to production packages because development-only t
 - Draft-only multi-step email sequence builder with ordered delays and atomic reordering
 - Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
 - Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
+- Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -151,6 +152,8 @@ Email sequence drafts are authored at `/automations`. They can only be processed
 Consented leads can be enrolled and manually processed from their detail drawer. Processing remains mock-only and requires an explicit click. See [docs/workflow-execution.md](docs/workflow-execution.md).
 
 Every generated email includes an encrypted, authenticated unsubscribe URL. Owners and admins manage blocked recipients under **Settings → Email safety**. See [docs/email-safety.md](docs/email-safety.md).
+
+Owners and admins publish workspace availability at `/bookings`. Public bookings create or link leads, appear on the overview, and record timeline activity. See [docs/calendar-booking.md](docs/calendar-booking.md).
 
 ## The product idea
 
@@ -229,6 +232,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── api.md
 │   ├── architecture.md
 │   ├── authentication.md
+│   ├── calendar-booking.md
 │   ├── capture-forms.md
 │   ├── csv-import.md
 │   ├── database.md

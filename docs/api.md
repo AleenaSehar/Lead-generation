@@ -150,6 +150,16 @@ Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/s
 
 Verified bounce, complaint, and unsubscribe webhooks automatically suppress the recipient and stop unfinished sequence work.
 
+### Calendar booking
+
+- `GET /api/booking-page` returns the authenticated workspace booking configuration.
+- `PUT /api/booking-page` creates or updates it for owners and admins.
+- `GET /api/meetings` lists upcoming booked meetings for the workspace.
+- `GET /api/public/bookings/:publicId` returns an active public page; add `?date=YYYY-MM-DD` to return available UTC slot timestamps.
+- `POST /api/public/bookings/:publicId` reserves a validated slot with attendee name, email, time zone, and optional notes.
+
+The public booking operation recalculates availability and uses a serializable transaction plus a unique page/start constraint to prevent double booking.
+
 Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
 
 ## Email sequence drafts

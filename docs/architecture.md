@@ -46,6 +46,7 @@ The initial domain models include:
 - Workflow and WorkflowRun
 - EmailSequence and EmailEvent
 - SuppressionEntry
+- BookingPage and Meeting
 
 All business and operational records are scoped to a workspace. Database-level uniqueness, foreign keys, deletion behavior, and query indexes provide the first layer of consistency; application authorization will add the next layer.
 
