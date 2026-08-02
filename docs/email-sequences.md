@@ -10,7 +10,7 @@ Owners and admins may create, edit, reorder, and archive drafts. Members and vie
 
 ## Safety boundary
 
-There is intentionally no activate, enroll, schedule, or send control. Saving a draft only stores content. The next workflow-engine PR will own execution state and idempotency, and compliance controls must be in place before production delivery becomes available.
+Saving a draft only stores content. A separate development-only workflow executor can now snapshot and manually process a consented lead from its detail drawer. There is still no automatic scheduler or real provider, and compliance controls must be complete before production delivery becomes available.
 
 ## Manual verification
 

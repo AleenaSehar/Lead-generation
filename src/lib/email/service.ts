@@ -8,7 +8,7 @@ import type { EmailWebhookInput, SendEmailInput } from "@/lib/email/validation";
 import { assertLeadPermission } from "@/lib/leads/permissions";
 import type { LeadServiceContext } from "@/lib/leads/service";
 
-export async function sendLeadEmail(database: PrismaClient, provider: EmailProvider, context: LeadServiceContext, input: SendEmailInput) {
+export async function sendLeadEmail(database: PrismaClient, provider: EmailProvider, context: LeadServiceContext, input: SendEmailInput, options: { idempotencyKey?: string } = {}) {
   assertLeadPermission(context.role, "update");
   const lead = await database.lead.findFirst({ where: { id: input.leadId, workspaceId: context.workspaceId } });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
@@ -17,8 +17,11 @@ export async function sendLeadEmail(database: PrismaClient, provider: EmailProvi
   const suppression = await database.suppressionEntry.findUnique({ where: { workspaceId_email: { workspaceId: context.workspaceId, email: lead.email } } });
   if (suppression) throw new ApiError(409, "EMAIL_SUPPRESSED", `Email is suppressed because of ${suppression.reason.toLowerCase()}.`);
 
-  const queued = await database.emailEvent.create({
-    data: { workspaceId: context.workspaceId, leadId: lead.id, type: EmailEventType.QUEUED, provider: provider.name, metadata: { recipient: lead.email, from: getEmailFrom(), subject: input.subject } },
+  const existing = options.idempotencyKey ? await database.emailEvent.findUnique({ where: { idempotencyKey: options.idempotencyKey } }) : null;
+  if (existing && (existing.workspaceId !== context.workspaceId || existing.leadId !== lead.id)) throw new ApiError(409, "EMAIL_IDEMPOTENCY_CONFLICT", "Email idempotency key is already in use.");
+  if (existing?.providerMessageId) return { queuedEventId: existing.id, provider: existing.provider, providerMessageId: existing.providerMessageId, status: EmailEventType.SENT, simulated: existing.provider === "mock", duplicate: true };
+  const queued = existing ?? await database.emailEvent.create({
+    data: { workspaceId: context.workspaceId, leadId: lead.id, type: EmailEventType.QUEUED, provider: provider.name, idempotencyKey: options.idempotencyKey, metadata: { recipient: lead.email, from: getEmailFrom(), subject: input.subject } },
   });
   try {
     const result = await provider.send({ to: lead.email, from: getEmailFrom(), subject: input.subject, text: input.text, html: input.html, idempotencyKey: queued.id });

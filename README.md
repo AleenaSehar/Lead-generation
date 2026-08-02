@@ -125,6 +125,7 @@ The dependency audit is scoped to production packages because development-only t
 - Lead detail drawer with attributed notes, score explanations, and paginated activity history
 - Mock-first email provider foundation with consent gates, signed webhooks, and idempotent delivery events
 - Draft-only multi-step email sequence builder with ordered delays and atomic reordering
+- Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -144,7 +145,9 @@ Open **View details** on any pipeline card to review contact data, scoring reaso
 
 Email delivery currently runs in safe mock mode: attempts are recorded but nothing is sent externally. See [docs/email-delivery.md](docs/email-delivery.md).
 
-Email sequence drafts are authored at `/automations`. They cannot execute or send until the workflow-engine phase. See [docs/email-sequences.md](docs/email-sequences.md).
+Email sequence drafts are authored at `/automations`. They can only be processed manually through the mock workflow engine; no automatic or real sending is enabled. See [docs/email-sequences.md](docs/email-sequences.md).
+
+Consented leads can be enrolled and manually processed from their detail drawer. Processing remains mock-only and requires an explicit click. See [docs/workflow-execution.md](docs/workflow-execution.md).
 
 ## The product idea
 
@@ -230,6 +233,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── email-sequences.md
 │   ├── lead-activity.md
 │   ├── lead-scoring.md
+│   ├── workflow-execution.md
 │   └── roadmap.md
 ├── compose.yaml
 ├── prisma.config.ts

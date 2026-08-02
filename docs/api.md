@@ -151,3 +151,12 @@ Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optio
 - `DELETE /api/email-sequences/:sequenceId` archives the draft.
 
 Owners and admins may mutate sequences; members and viewers may list them. Each sequence supports up to 20 steps. Step positions are assigned by the server from array order, delay is `0–43,200` minutes, and these endpoints never activate or execute a sequence.
+
+## Sequence enrollment and manual processing
+
+- `POST /api/sequence-enrollments` snapshots a sequence into a lead enrollment. It accepts `leadId`, `emailSequenceId`, and an optional client idempotency key.
+- `GET /api/sequence-enrollments?leadId=:leadId` lists the latest 20 enrollments for a workspace lead.
+- `POST /api/sequence-enrollments/:enrollmentId/process` claims and processes one due step.
+- `DELETE /api/sequence-enrollments/:enrollmentId` cancels pending work.
+
+Owners and admins manage execution; all workspace roles may view a lead's history. Processing rechecks email, consent, suppression, and archive status. Concurrent claims use a database lease, and each step uses a stable email idempotency key across retries.

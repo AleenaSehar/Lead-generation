@@ -42,7 +42,7 @@ export function AutomationManager({ canManage }: { canManage: boolean }) {
     try {
       const payload = { name, description: description || null, steps: steps.map(({ subject, body, delayMinutes }) => ({ subject, body, delayMinutes })) };
       const saved = await request<Sequence>(selectedId ? `/api/email-sequences/${selectedId}` : "/api/email-sequences", { method: selectedId ? "PATCH" : "POST", body: JSON.stringify(payload) });
-      await load(); setSelectedId(saved.id); setName(saved.name); setDescription(saved.description ?? ""); setSteps(saved.steps); setMessage("Draft saved. It cannot send until the execution engine is implemented.");
+      await load(); setSelectedId(saved.id); setName(saved.name); setDescription(saved.description ?? ""); setSteps(saved.steps); setMessage("Draft saved. Enroll an eligible lead from its details drawer to process steps manually.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save sequence."); }
     finally { setBusy(false); }
   }
