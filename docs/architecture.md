@@ -2,7 +2,7 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, the authorized lead API, and the lead dashboard are persistent. Campaign, automation, and chart content remains demonstrative until those phases are implemented.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, the authorized lead API, lead dashboard, capture, scoring, audit history, email events, and sequence drafts are persistent. Campaign and chart content remains demonstrative until those phases are implemented.
 
 The database schema, migrations, identity verification, workspace authorization, lead validation, and role enforcement are real, but the application is not yet a complete production data system. It has no team invitations, email delivery, enrichment, or background workflow execution.
 

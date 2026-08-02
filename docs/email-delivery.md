@@ -26,4 +26,4 @@ Every callback must have a unique provider `eventId`. Repeated delivery of the s
 
 ## Current boundary
 
-This foundation does not provide a production provider, sequence builder, background execution, or unsubscribe UI. Those remain separate Phase 3 PRs so real sending cannot become active before workflow and compliance controls are complete.
+This foundation does not provide a production provider, background execution, or unsubscribe UI. Sequence authoring now exists separately, but drafts cannot run or send until workflow and compliance controls are complete.
