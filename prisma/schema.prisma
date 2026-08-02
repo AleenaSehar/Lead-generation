@@ -93,6 +93,22 @@ enum EmailSequenceStatus {
   ARCHIVED
 }
 
+enum SequenceEnrollmentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SequenceStepRunStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum SuppressionReason {
   UNSUBSCRIBED
   BOUNCED
@@ -158,6 +174,7 @@ model Workspace {
   captureForms       CaptureForm[]
   captureSubmissions CaptureSubmission[]
   scoringRules       ScoringRule[]
+  sequenceEnrollments SequenceEnrollment[]
 }
 
 model ScoringRule {
@@ -221,6 +238,7 @@ model Lead {
   workflowRuns   WorkflowRun[]
   emailEvents    EmailEvent[]
   captureSubmissions CaptureSubmission[]
+  sequenceEnrollments SequenceEnrollment[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -369,8 +387,58 @@ model EmailSequence {
   workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workflow    Workflow?
   steps       EmailStep[]
+  enrollments SequenceEnrollment[]
 
   @@index([workspaceId, status])
+}
+
+model SequenceEnrollment {
+  id             String                   @id @default(cuid())
+  status         SequenceEnrollmentStatus @default(PENDING)
+  idempotencyKey String                   @unique
+  nextRunAt      DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  error          String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  workspaceId    String
+  emailSequenceId String
+  leadId         String
+  enrolledById   String
+  workspace      Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  emailSequence  EmailSequence            @relation(fields: [emailSequenceId], references: [id], onDelete: Restrict)
+  lead           Lead                     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  stepRuns       SequenceStepRun[]
+
+  @@index([workspaceId, status, nextRunAt])
+  @@index([leadId, createdAt])
+  @@index([emailSequenceId, createdAt])
+}
+
+model SequenceStepRun {
+  id              String                @id @default(cuid())
+  position        Int
+  subject         String
+  body            String
+  delayMinutes    Int
+  status          SequenceStepRunStatus @default(PENDING)
+  scheduledAt     DateTime
+  startedAt       DateTime?
+  completedAt     DateTime?
+  attempts        Int                   @default(0)
+  error           String?
+  lockToken       String?
+  lockedAt        DateTime?
+  emailIdempotencyKey String            @unique
+  providerMessageId String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  enrollmentId    String
+  enrollment      SequenceEnrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, position])
+  @@index([status, scheduledAt])
 }
 
 model EmailStep {
@@ -393,6 +461,7 @@ model EmailEvent {
   provider          String         @default("mock")
   providerMessageId String?
   providerEventId   String?        @unique
+  idempotencyKey    String?        @unique
   metadata          Json?
   occurredAt        DateTime       @default(now())
   workspaceId       String

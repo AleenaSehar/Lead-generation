@@ -61,6 +61,7 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 
 1. **Server-enforced isolation:** Every protected query is scoped to an authorized workspace.
 2. **Explainable automation:** Scores and workflow decisions expose the rules that produced them.
+3. **Idempotent execution:** enrollment snapshots, database leases, and stable step keys make repeated processing safe.
 3. **Provider independence:** Business logic does not depend directly on one external vendor.
 4. **Safe retries:** Webhooks and background jobs tolerate duplicate delivery.
 5. **Privacy by design:** Collect only required data and support suppression, export, and deletion.

@@ -210,7 +210,7 @@ export function LeadPipeline() {
           </div>
         )}
       </article>
-      {detailLeadId && <LeadDetailDrawer leadId={detailLeadId} canAddNote={canUpdate} onClose={closeDetails} onChanged={refreshDetails} />}
+      {detailLeadId && <LeadDetailDrawer leadId={detailLeadId} canAddNote={canUpdate} canManageWorkflows={canArchive} onClose={closeDetails} onChanged={refreshDetails} />}
     </section>
   );
 }
