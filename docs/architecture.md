@@ -2,9 +2,9 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, leads, capture forms, scoring, audit history, mock email events, sequence drafts and manual execution, suppression controls, booking pages, meetings, and mock CRM synchronization are persistent. Campaign reporting and some charts remain demonstrative until those phases are implemented.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, leads, capture forms, scoring, audit history, mock email events, sequence drafts and manual execution, suppression controls, booking pages, meetings, and CRM synchronization are persistent. CRM contacts can be synchronized through the local mock adapter or real HubSpot server API. Campaign reporting and some charts remain demonstrative until those phases are implemented.
 
-The database schema, migrations, identity verification, workspace authorization, validation, role enforcement, and transaction boundaries are real. Email and CRM providers are deliberately mocked, and workflow execution is manual; there are no team invitations, enrichment provider, real external calendar/CRM connection, or automatic background worker yet.
+The database schema, migrations, identity verification, workspace authorization, validation, role enforcement, and transaction boundaries are real. Email remains mocked, HubSpot contact synchronization is real when configured, and workflow execution is manual; there are no team invitations, enrichment provider, external calendar connection, or automatic background worker yet.
 
 ## Target architecture
 
