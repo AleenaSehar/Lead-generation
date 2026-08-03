@@ -9,16 +9,16 @@ import type { CrmConnectionInput } from "@/lib/crm/validation";
 import { assertLeadPermission } from "@/lib/leads/permissions";
 import type { LeadServiceContext } from "@/lib/leads/service";
 
-export const defaultCrmFieldMapping = { email: "email", firstName: "firstname", lastName: "lastname", phone: "phone", jobTitle: "jobtitle", companyName: "company", companyDomain: "website", status: "lead_status", score: "lead_score" };
+export const defaultCrmFieldMapping = { email: "email", firstName: "firstname", lastName: "lastname", phone: "phone", jobTitle: "jobtitle", companyName: "company", companyDomain: "website", status: "", score: "" };
 function assertManager(context: LeadServiceContext) { if (context.role !== WorkspaceRole.OWNER && context.role !== WorkspaceRole.ADMIN) throw new ApiError(403, "INSUFFICIENT_ROLE", "Only workspace owners and admins can configure CRM synchronization."); }
 
 export async function getCrmConnection(database: PrismaClient, context: LeadServiceContext) { return database.crmConnection.findUnique({ where: { workspaceId: context.workspaceId }, include: { _count: { select: { contactLinks: true, syncAttempts: true } } } }); }
-export async function saveCrmConnection(database: PrismaClient, context: LeadServiceContext, input: CrmConnectionInput) { assertManager(context); return database.crmConnection.upsert({ where: { workspaceId: context.workspaceId }, create: { workspaceId: context.workspaceId, provider: CrmProviderType.MOCK, ...input }, update: input }); }
+export async function saveCrmConnection(database: PrismaClient, context: LeadServiceContext, input: CrmConnectionInput) { assertManager(context); if (input.provider === CrmProviderType.HUBSPOT) { getCrmProvider(input.provider); if (input.fieldMapping.email !== "email") throw new ApiError(400, "HUBSPOT_EMAIL_MAPPING_REQUIRED", "HubSpot synchronization requires the LeadFlow email field to map to email."); } return database.crmConnection.upsert({ where: { workspaceId: context.workspaceId }, create: { workspaceId: context.workspaceId, ...input }, update: input }); }
 export async function testCrmConnection(database: PrismaClient, context: LeadServiceContext) { assertManager(context); const connection = await database.crmConnection.findUnique({ where: { workspaceId: context.workspaceId } }); if (!connection) throw new ApiError(409, "CRM_CONNECTION_REQUIRED", "Save a CRM connection first."); const result = await getCrmProvider(connection.provider).testConnection(); const tested = await database.crmConnection.update({ where: { id: connection.id }, data: { lastTestedAt: new Date() } }); return { ...result, testedAt: tested.lastTestedAt }; }
 
 function payloadForLead(lead: { email: string | null; firstName: string | null; lastName: string | null; phone: string | null; jobTitle: string | null; companyName: string | null; companyDomain: string | null; status: string; score: number }, mapping: typeof defaultCrmFieldMapping) {
   const values = { email: lead.email, firstName: lead.firstName, lastName: lead.lastName, phone: lead.phone, jobTitle: lead.jobTitle, companyName: lead.companyName, companyDomain: lead.companyDomain, status: lead.status, score: lead.score };
-  return Object.fromEntries(Object.entries(mapping).map(([source, target]) => [target, values[source as keyof typeof values]])) as CrmContactPayload;
+  return Object.fromEntries(Object.entries(mapping).filter(([, target]) => Boolean(target)).map(([source, target]) => [target, values[source as keyof typeof values]])) as CrmContactPayload;
 }
 
 export async function syncLeadToCrm(database: PrismaClient, context: LeadServiceContext, leadId: string, providerOverride?: CrmProvider) {
@@ -44,7 +44,9 @@ export async function syncLeadToCrm(database: PrismaClient, context: LeadService
     return { attempt: completed, link, duplicate: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "CRM provider failed."; const now = new Date();
-    await database.$transaction([database.crmSyncAttempt.update({ where: { id: attempt.id }, data: { status: CrmSyncStatus.FAILED, completedAt: now, error: message } }), database.leadActivity.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, actorId: context.userId, type: LeadActivityType.CRM_SYNC_FAILED, summary: `CRM synchronization failed: ${message}`, occurredAt: now } })]);
+    const providerFailure = error as { status?: unknown; retryable?: unknown; retryAfterMs?: unknown };
+    const responsePayload = { providerStatus: typeof providerFailure.status === "number" ? providerFailure.status : null, retryable: providerFailure.retryable === true, retryAfterMs: typeof providerFailure.retryAfterMs === "number" ? providerFailure.retryAfterMs : null };
+    await database.$transaction([database.crmSyncAttempt.update({ where: { id: attempt.id }, data: { status: CrmSyncStatus.FAILED, completedAt: now, error: message, responsePayload } }), database.leadActivity.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, actorId: context.userId, type: LeadActivityType.CRM_SYNC_FAILED, summary: `CRM synchronization failed: ${message}`, occurredAt: now, metadata: responsePayload } })]);
     throw new ApiError(502, "CRM_SYNC_FAILED", "The CRM provider could not synchronize this lead.");
   }
 }
