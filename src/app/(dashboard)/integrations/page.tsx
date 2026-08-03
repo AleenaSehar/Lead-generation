@@ -1,5 +1,7 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { CrmManager } from "@/components/integrations/crm-manager";
+import { requireWorkspace } from "@/lib/auth";
 
-export default function IntegrationsPage() {
-  return <PlaceholderPage icon="⌘" title="Integrations" description="Connect email, calendars, forms, and your CRM here." />;
+export default async function IntegrationsPage() {
+  const { membership } = await requireWorkspace();
+  return <CrmManager canManage={["OWNER", "ADMIN"].includes(membership.role)} />;
 }

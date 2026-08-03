@@ -51,6 +51,8 @@ enum LeadActivityType {
   EMAIL_COMPLAINED
   EMAIL_UNSUBSCRIBED
   SUPPRESSION_CHANGED
+  CRM_SYNCED
+  CRM_SYNC_FAILED
   FORM_SUBMITTED
   MEETING_BOOKED
   NOTE_ADDED
@@ -126,6 +128,17 @@ enum MeetingStatus {
   CANCELLED
 }
 
+enum CrmProviderType {
+  MOCK
+  HUBSPOT
+}
+
+enum CrmSyncStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 enum CaptureFormStatus {
   ACTIVE
   INACTIVE
@@ -164,6 +177,7 @@ model User {
   activities       LeadActivity[]    @relation("ActivityActor")
   createdForms     CaptureForm[]     @relation("CaptureFormCreator")
   createdBookingPages BookingPage[]  @relation("BookingPageCreator")
+  crmSyncAttempts CrmSyncAttempt[]    @relation("CrmSyncInitiator")
 }
 
 model Workspace {
@@ -187,6 +201,9 @@ model Workspace {
   sequenceEnrollments SequenceEnrollment[]
   bookingPages       BookingPage[]
   meetings           Meeting[]
+  crmConnection      CrmConnection?
+  crmContactLinks    CrmContactLink[]
+  crmSyncAttempts    CrmSyncAttempt[]
 }
 
 model ScoringRule {
@@ -252,6 +269,8 @@ model Lead {
   captureSubmissions CaptureSubmission[]
   sequenceEnrollments SequenceEnrollment[]
   meetings       Meeting[]
+  crmContactLinks CrmContactLink[]
+  crmSyncAttempts CrmSyncAttempt[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -259,6 +278,64 @@ model Lead {
   @@index([workspaceId, createdAt])
   @@index([ownerId])
   @@index([campaignId])
+}
+
+model CrmConnection {
+  id             String          @id @default(cuid())
+  provider       CrmProviderType @default(MOCK)
+  displayName    String          @default("Development CRM")
+  isActive       Boolean         @default(true)
+  fieldMapping   Json
+  lastTestedAt   DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  workspaceId    String          @unique
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contactLinks   CrmContactLink[]
+  syncAttempts   CrmSyncAttempt[]
+}
+
+model CrmContactLink {
+  id              String        @id @default(cuid())
+  externalId      String
+  lastSyncedAt    DateTime
+  sourceUpdatedAt DateTime
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  workspaceId     String
+  connectionId    String
+  leadId          String
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, leadId])
+  @@unique([connectionId, externalId])
+  @@index([workspaceId, lastSyncedAt])
+}
+
+model CrmSyncAttempt {
+  id              String        @id @default(cuid())
+  status          CrmSyncStatus @default(PENDING)
+  idempotencyKey  String        @unique
+  operation       String        @default("UPSERT_CONTACT")
+  requestPayload  Json
+  responsePayload Json?
+  error           String?
+  startedAt       DateTime      @default(now())
+  completedAt     DateTime?
+  workspaceId     String
+  connectionId    String
+  leadId          String
+  initiatedById   String?
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  initiatedBy     User?         @relation("CrmSyncInitiator", fields: [initiatedById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, startedAt])
+  @@index([leadId, startedAt])
+  @@index([connectionId, status])
 }
 
 model BookingPage {

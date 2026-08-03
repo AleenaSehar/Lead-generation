@@ -160,6 +160,16 @@ Verified bounce, complaint, and unsubscribe webhooks automatically suppress the 
 
 The public booking operation recalculates availability and uses a serializable transaction plus a unique page/start constraint to prevent double booking.
 
+### CRM synchronization
+
+- `GET /api/crm/connection` returns the workspace CRM configuration.
+- `PUT /api/crm/connection` creates or updates the mock connection and field mapping for owners/admins.
+- `POST /api/crm/connection/test` tests the configured provider for owners/admins.
+- `GET /api/crm/syncs` lists the latest 100 workspace attempts.
+- `POST /api/crm/leads/:leadId/sync` idempotently creates or updates a provider contact. Owners, admins, and members may invoke it.
+
+The current provider is mock-only. Unchanged lead snapshots reuse completed attempts, while modified leads create a new attempt linked to the same external contact.
+
 Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
 
 ## Email sequence drafts

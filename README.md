@@ -128,6 +128,7 @@ The dependency audit is scoped to production packages because development-only t
 - Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
 - Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
 - Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
+- Provider-independent CRM sync foundation with mock connections, field mapping, contact links, idempotent retries, and audit history
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -154,6 +155,8 @@ Consented leads can be enrolled and manually processed from their detail drawer.
 Every generated email includes an encrypted, authenticated unsubscribe URL. Owners and admins manage blocked recipients under **Settings → Email safety**. See [docs/email-safety.md](docs/email-safety.md).
 
 Owners and admins publish workspace availability at `/bookings`. Public bookings create or link leads, appear on the overview, and record timeline activity. See [docs/calendar-booking.md](docs/calendar-booking.md).
+
+CRM synchronization is configured at `/integrations`. The current mock provider stores deterministic contact links locally and never transfers data externally. See [docs/crm-sync.md](docs/crm-sync.md).
 
 ## The product idea
 
@@ -235,6 +238,7 @@ Build consent, suppression lists, unsubscribe handling, sender-domain authentica
 │   ├── calendar-booking.md
 │   ├── capture-forms.md
 │   ├── csv-import.md
+│   ├── crm-sync.md
 │   ├── database.md
 │   ├── email-delivery.md
 │   ├── email-safety.md
