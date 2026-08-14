@@ -62,7 +62,7 @@ export async function processEnrollment(database: PrismaClient, context: LeadSer
   assertManager(context);
   const enrollment = await database.sequenceEnrollment.findFirst({ where: { id: enrollmentId, workspaceId: context.workspaceId }, include: { stepRuns: { orderBy: { position: "asc" } } } });
   if (!enrollment) throw new ApiError(404, "ENROLLMENT_NOT_FOUND", "Sequence enrollment was not found.");
-  if (enrollment.status === SequenceEnrollmentStatus.COMPLETED || enrollment.status === SequenceEnrollmentStatus.CANCELLED) return { enrollment, outcome: enrollment.status.toLowerCase() };
+  if (enrollment.status === SequenceEnrollmentStatus.COMPLETED || enrollment.status === SequenceEnrollmentStatus.REPLIED || enrollment.status === SequenceEnrollmentStatus.CANCELLED) return { enrollment, outcome: enrollment.status.toLowerCase() };
   const check = await eligibility(database, context.workspaceId, enrollment.leadId);
   if (check.reason) { await cancelForReason(database, enrollment.id, check.reason, now); return { enrollment: await database.sequenceEnrollment.findUniqueOrThrow({ where: { id: enrollment.id }, include: { stepRuns: { orderBy: { position: "asc" } } } }), outcome: "cancelled" }; }
 
@@ -106,6 +106,6 @@ export async function cancelEnrollment(database: PrismaClient, context: LeadServ
   assertManager(context);
   const enrollment = await database.sequenceEnrollment.findFirst({ where: { id: enrollmentId, workspaceId: context.workspaceId } });
   if (!enrollment) throw new ApiError(404, "ENROLLMENT_NOT_FOUND", "Sequence enrollment was not found.");
-  if (enrollment.status !== SequenceEnrollmentStatus.COMPLETED) await cancelForReason(database, enrollment.id, "Cancelled manually.", now);
+  if (enrollment.status !== SequenceEnrollmentStatus.COMPLETED && enrollment.status !== SequenceEnrollmentStatus.REPLIED) await cancelForReason(database, enrollment.id, "Cancelled manually.", now);
   return database.sequenceEnrollment.findUniqueOrThrow({ where: { id: enrollment.id }, include: { stepRuns: { orderBy: { position: "asc" } }, emailSequence: { select: { name: true } } } });
 }

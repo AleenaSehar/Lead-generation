@@ -141,6 +141,8 @@ Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/s
 - `POST /api/emails/send` accepts `leadId`, `subject`, `text`, and optional `html`. Owners, admins, and members may create an attempt. The lead must belong to the workspace, have an email and recorded consent, and not be suppressed.
 - `POST /api/webhooks/email/:provider` ingests provider events. It requires `x-leadflow-signature`, an HMAC-SHA256 signature of the exact raw body using `EMAIL_WEBHOOK_SECRET`.
 
+Webhook bodies contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. A `REPLIED` event may include a `metadata.textPreview`; it records lead activity and moves the sequence enrollment associated with `messageId` to `REPLIED`, cancelling its remaining steps. Repeated provider event IDs are idempotent.
+
 ### Email safety
 
 - `GET /api/suppressions` lists workspace suppression entries for an authenticated member.

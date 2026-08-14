@@ -103,6 +103,7 @@ enum SequenceEnrollmentStatus {
   PENDING
   RUNNING
   COMPLETED
+  REPLIED
   FAILED
   CANCELLED
 }
@@ -434,6 +435,7 @@ model CaptureSubmission {
 
 model LeadActivity {
   id          String           @id @default(cuid())
+  sourceKey   String?          @unique
   type        LeadActivityType
   summary     String
   metadata    Json?

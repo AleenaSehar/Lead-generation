@@ -68,7 +68,7 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 5. **Safe retries:** Webhooks and background jobs tolerate duplicate delivery.
 6. **Privacy by design:** Collect only required data and support suppression, export, and deletion.
 
-Outbound messages carry encrypted, authenticated unsubscribe tokens. Public unsubscribe actions and verified bounce/complaint webhooks converge on one idempotent suppression service, which records audit activity and cancels unfinished sequence steps transactionally.
+Outbound messages carry encrypted, authenticated unsubscribe tokens. Public unsubscribe actions and verified bounce/complaint webhooks converge on one idempotent suppression service. Verified reply events resolve identity through recorded provider message IDs, create idempotent lead activity, and transactionally stop only the matching sequence enrollment.
 7. **Observable operations:** Important workflow transitions and external calls create structured events.
 8. **Incremental delivery:** Each feature is developed and reviewed independently against `dev`.
 
