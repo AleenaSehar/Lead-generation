@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-import { EmailEventType, LeadActivityType, SuppressionReason } from "@/generated/prisma/enums";
+import { EmailEventType, LeadActivityType, SequenceEnrollmentStatus, SequenceStepRunStatus, SuppressionReason } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { getEmailFrom } from "@/lib/email/config";
 import type { EmailProvider } from "@/lib/email/provider";
@@ -45,21 +45,54 @@ export async function sendLeadEmail(database: PrismaClient, provider: EmailProvi
 export async function ingestEmailWebhook(database: PrismaClient, provider: string, input: EmailWebhookInput) {
   const duplicate = await database.emailEvent.findUnique({ where: { providerEventId: input.eventId } });
   if (duplicate) {
-    await applyWebhookSuppression(database, provider, input, duplicate.workspaceId, duplicate.leadId);
+    if (input.type === EmailEventType.REPLIED) await applyReply(database, provider, input, duplicate.workspaceId, duplicate.leadId);
+    else await applyWebhookSuppression(database, provider, input, duplicate.workspaceId, duplicate.leadId);
     return { event: duplicate, duplicate: true };
   }
   const origin = await database.emailEvent.findFirst({ where: { provider, providerMessageId: input.messageId }, orderBy: { occurredAt: "asc" } });
   if (!origin) throw new ApiError(404, "EMAIL_MESSAGE_NOT_FOUND", "The provider message was not found.");
   try {
     const event = await database.emailEvent.create({ data: { workspaceId: origin.workspaceId, leadId: origin.leadId, type: input.type, provider, providerMessageId: input.messageId, providerEventId: input.eventId, occurredAt: new Date(input.occurredAt), metadata: (input.metadata ?? {}) as Prisma.InputJsonValue } });
-    await applyWebhookSuppression(database, provider, input, origin.workspaceId, origin.leadId);
+    if (input.type === EmailEventType.REPLIED) await applyReply(database, provider, input, origin.workspaceId, origin.leadId);
+    else await applyWebhookSuppression(database, provider, input, origin.workspaceId, origin.leadId);
     return { event, duplicate: false };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { event: await database.emailEvent.findUniqueOrThrow({ where: { providerEventId: input.eventId } }), duplicate: true };
+      const event = await database.emailEvent.findUniqueOrThrow({ where: { providerEventId: input.eventId } });
+      if (input.type === EmailEventType.REPLIED) await applyReply(database, provider, input, event.workspaceId, event.leadId);
+      else await applyWebhookSuppression(database, provider, input, event.workspaceId, event.leadId);
+      return { event, duplicate: true };
     }
     throw error;
   }
+}
+
+async function applyReply(database: PrismaClient, provider: string, input: EmailWebhookInput, workspaceId: string, leadId: string | null) {
+  if (!leadId) return;
+  const occurredAt = new Date(input.occurredAt);
+  const stepRun = await database.sequenceStepRun.findFirst({
+    where: { providerMessageId: input.messageId, enrollment: { workspaceId, leadId } },
+    select: { enrollmentId: true },
+  });
+  const preview = typeof input.metadata?.textPreview === "string" ? input.metadata.textPreview.slice(0, 280) : null;
+  await database.$transaction(async (tx) => {
+    if (stepRun) {
+      await tx.sequenceEnrollment.updateMany({
+        where: { id: stepRun.enrollmentId, status: { in: [SequenceEnrollmentStatus.PENDING, SequenceEnrollmentStatus.RUNNING, SequenceEnrollmentStatus.COMPLETED, SequenceEnrollmentStatus.FAILED] } },
+        data: { status: SequenceEnrollmentStatus.REPLIED, error: null, completedAt: occurredAt, nextRunAt: null },
+      });
+      await tx.sequenceStepRun.updateMany({
+        where: { enrollmentId: stepRun.enrollmentId, status: { in: [SequenceStepRunStatus.PENDING, SequenceStepRunStatus.PROCESSING, SequenceStepRunStatus.FAILED] } },
+        data: { status: SequenceStepRunStatus.CANCELLED, error: "Stopped because the lead replied.", completedAt: occurredAt, lockToken: null, lockedAt: null },
+      });
+    }
+    await tx.leadActivity.upsert({
+      where: { sourceKey: `email-reply:${provider}:${input.eventId}` },
+      create: { sourceKey: `email-reply:${provider}:${input.eventId}`, workspaceId, leadId, type: LeadActivityType.EMAIL_REPLIED, summary: preview ? `Email reply received: “${preview}”` : "Email reply received.", occurredAt, metadata: { provider, providerEventId: input.eventId, providerMessageId: input.messageId, sequenceEnrollmentId: stepRun?.enrollmentId ?? null, textPreview: preview } },
+      update: {},
+    });
+    await tx.lead.update({ where: { id: leadId }, data: { lastActivityAt: occurredAt } });
+  });
 }
 
 async function applyWebhookSuppression(database: PrismaClient, provider: string, input: EmailWebhookInput, workspaceId: string, leadId: string | null) {

@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
-import { EmailEventType, LeadSourceType, LeadStatus, SuppressionReason, WorkspaceRole } from "@/generated/prisma/enums";
+import { EmailEventType, EmailSequenceStatus, LeadSourceType, LeadStatus, SequenceEnrollmentStatus, SequenceStepRunStatus, SuppressionReason, WorkspaceRole } from "@/generated/prisma/enums";
 import type { EmailProvider } from "@/lib/email/provider";
 import { ingestEmailWebhook, sendLeadEmail } from "@/lib/email/service";
 import type { LeadServiceContext } from "@/lib/leads/service";
@@ -80,5 +80,23 @@ describe("email delivery foundation", () => {
     expect(await database.suppressionEntry.findUnique({ where: { workspaceId_email: { workspaceId, email: target.email! } } })).toMatchObject({ reason: SuppressionReason.BOUNCED });
     expect(await database.leadActivity.count({ where: { leadId: target.id, type: "EMAIL_BOUNCED" } })).toBe(1);
     await expect(sendLeadEmail(database, provider, owner, { leadId: target.id, subject: "Blocked", text: "No" })).rejects.toMatchObject({ code: "EMAIL_SUPPRESSED" });
+  });
+
+  it("records a reply once and stops the sequence that sent the message", async () => {
+    const target = await lead(`reply-${runId}@example.test`);
+    const sent = await sendLeadEmail(database, provider, owner, { leadId: target.id, subject: "Reply test", text: "Hello" });
+    const sequence = await database.emailSequence.create({ data: { workspaceId, name: "Reply sequence", status: EmailSequenceStatus.DRAFT } });
+    const enrollment = await database.sequenceEnrollment.create({ data: { workspaceId, leadId: target.id, emailSequenceId: sequence.id, enrolledById: owner.userId, idempotencyKey: `reply-enrollment-${runId}`, status: SequenceEnrollmentStatus.RUNNING, nextRunAt: new Date(), stepRuns: { create: [
+      { position: 0, subject: "Reply test", body: "Hello", delayMinutes: 0, scheduledAt: new Date(), status: SequenceStepRunStatus.COMPLETED, completedAt: new Date(), providerMessageId: sent.providerMessageId, emailIdempotencyKey: `reply-step-0-${runId}` },
+      { position: 1, subject: "Follow up", body: "Again", delayMinutes: 60, scheduledAt: new Date(Date.now() + 60_000), emailIdempotencyKey: `reply-step-1-${runId}` },
+    ] } } });
+    const occurredAt = new Date();
+    const input = { eventId: `reply-event-${runId}`, messageId: sent.providerMessageId, type: EmailEventType.REPLIED, occurredAt: occurredAt.toISOString(), metadata: { textPreview: "Thanks, let us talk tomorrow." } };
+    expect((await ingestEmailWebhook(database, "mock", input)).duplicate).toBe(false);
+    expect((await ingestEmailWebhook(database, "mock", input)).duplicate).toBe(true);
+    expect(await database.sequenceEnrollment.findUnique({ where: { id: enrollment.id } })).toMatchObject({ status: SequenceEnrollmentStatus.REPLIED, nextRunAt: null });
+    expect(await database.sequenceStepRun.findUnique({ where: { emailIdempotencyKey: `reply-step-1-${runId}` } })).toMatchObject({ status: SequenceStepRunStatus.CANCELLED, error: "Stopped because the lead replied." });
+    expect(await database.leadActivity.count({ where: { leadId: target.id, type: "EMAIL_REPLIED" } })).toBe(1);
+    expect((await database.lead.findUniqueOrThrow({ where: { id: target.id } })).lastActivityAt?.toISOString()).toBe(occurredAt.toISOString());
   });
 });

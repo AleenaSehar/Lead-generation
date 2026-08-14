@@ -39,7 +39,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 
 - [x] Calendar booking
 - [x] CRM synchronization
-- [ ] Email reply detection
+- [x] Email reply detection
 - [ ] Team notifications
 - [ ] Lead routing and ownership
 
