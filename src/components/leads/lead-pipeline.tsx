@@ -51,6 +51,7 @@ export function LeadPipeline() {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [loadLeads, query]);
+  useEffect(() => { const requested = searchParams.get("leadId"); if (!requested) return; const timer = window.setTimeout(() => setDetailLeadId(requested), 0); return () => window.clearTimeout(timer); }, [searchParams]);
 
   const grouped = useMemo(
     () =>

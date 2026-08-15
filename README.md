@@ -14,11 +14,11 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:5555](http://localhost:5555).
 
 Before signing in, create a Supabase development project and replace the placeholder Auth values in `.env`. See [Authentication setup](#authentication-setup).
 
-Authentication, workspaces, leads, pipeline actions, and dashboard lead metrics are persisted in PostgreSQL. Automation and campaign reporting remain demonstration-only until their respective phases.
+Authentication, workspaces, leads, capture forms, scoring, pipeline actions, email events and sequences, suppression controls, bookings, CRM links, and team notifications are persisted. Sequence processing remains manual and campaign reporting remains demonstrative until their later phases.
 
 ## Authentication setup
 
@@ -31,8 +31,8 @@ Authentication, workspaces, leads, pipeline actions, and dashboard lead metrics 
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    ```
 
-4. In Supabase Auth URL configuration, set the development site URL to `http://localhost:3000`.
-5. Add `http://localhost:3000/auth/callback` to the allowed redirect URLs.
+4. In Supabase Auth URL configuration, set the development site URL to `http://localhost:5555`.
+5. Add `http://localhost:5555/auth/callback` to the allowed redirect URLs.
 6. Keep email/password authentication and email confirmation enabled.
 
 Start PostgreSQL and apply migrations before creating your first account:
@@ -43,7 +43,7 @@ npm run db:migrate:deploy
 npm run dev
 ```
 
-Visit [http://localhost:3000/sign-up](http://localhost:3000/sign-up), confirm the email Supabase sends, and create your first LeadFlow workspace.
+Visit [http://localhost:5555/sign-up](http://localhost:5555/sign-up), confirm the email Supabase sends, and create your first LeadFlow workspace.
 
 Authentication routes:
 
@@ -113,6 +113,7 @@ The dependency audit is scoped to production packages because development-only t
 - Performance, source, and pipeline reporting UI
 - PostgreSQL and Prisma foundation with workspace-aware models
 - Supabase email/password authentication and session refresh
+- Password recovery with delivery-error feedback, secure recovery-session sign-out, and sign-in redirection after a successful change
 - Visible logout control and accessible password visibility toggles
 - Protected dashboard routes and persistent workspace onboarding
 - Authenticated, workspace-scoped lead CRUD API
@@ -128,6 +129,7 @@ The dependency audit is scoped to production packages because development-only t
 - Manual mock workflow executor with snapshot enrollments, due-step leases, cancellation, and retry-safe email idempotency
 - Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
 - Signed, idempotent email reply detection with lead timeline visibility and automatic stopping of the matching sequence
+- Workspace notification center with personal unread state, deduplicated business events, and direct lead links
 - Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
 - Provider-independent CRM synchronization with local mock and real HubSpot contact adapters, field mapping, durable contact links, idempotent retries, and audit history
 
@@ -156,6 +158,8 @@ Consented leads can be enrolled and manually processed from their detail drawer.
 Every generated email includes an encrypted, authenticated unsubscribe URL. Owners and admins manage blocked recipients under **Settings → Email safety**. See [docs/email-safety.md](docs/email-safety.md).
 
 Signed reply callbacks are matched through recorded provider message IDs. Replies appear in the lead drawer and stop the matching sequence without affecting unrelated enrollments. See [docs/email-replies.md](docs/email-replies.md).
+
+The top-bar notification center alerts workspace members about qualified and high-score leads, replies, meetings, and CRM failures. Read state is personal to each member. See [docs/team-notifications.md](docs/team-notifications.md).
 
 Owners and admins publish workspace availability at `/bookings`. Public bookings create or link leads, appear on the overview, and record timeline activity. See [docs/calendar-booking.md](docs/calendar-booking.md).
 

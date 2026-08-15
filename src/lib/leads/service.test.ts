@@ -172,6 +172,7 @@ describe("lead service integration", () => {
       score: 20,
     });
     await updateLead(database, member, lead.id, { status: LeadStatus.QUALIFIED, score: 88 });
+    expect(await database.notification.count({ where: { leadId: lead.id, type: { in: ["LEAD_QUALIFIED", "HIGH_SCORE"] } } })).toBe(2);
 
     const result = await listLeads(
       database,

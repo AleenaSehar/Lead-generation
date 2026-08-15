@@ -35,8 +35,8 @@ The publishable key is designed for browser use. Authorization does not rely on 
 
 Configure Supabase Auth:
 
-1. Set **Site URL** to `http://localhost:3000` for local development.
-2. Add `http://localhost:3000/auth/callback` as an allowed redirect URL.
+1. Set **Site URL** to `http://localhost:5555` for local development.
+2. Add `http://localhost:5555/auth/callback` as an allowed redirect URL.
 3. Enable email/password authentication.
 4. Keep email confirmation enabled.
 5. Use the default email service only for development; configure production SMTP before launch.
@@ -72,7 +72,7 @@ Then verify:
 5. Creating a workspace creates one `Workspace` and one `OWNER` membership.
 6. The dashboard displays the signed-in name and active workspace.
 7. Signing out returns to `/sign-in` and protected routes remain inaccessible.
-8. Password recovery returns through the callback to `/update-password`.
+8. Password recovery returns through the callback to `/update-password`; a successful change signs out the recovery session and redirects to `/sign-in`.
 
 Use Prisma Studio to confirm the internal `User`, `Workspace`, and `WorkspaceMember` records.
 

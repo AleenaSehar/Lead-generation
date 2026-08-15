@@ -10,11 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; password?: string }>;
 }) {
   if (await getCurrentUser()) redirect("/");
   const configured = isSupabaseConfigured();
-  const callbackFailed = (await searchParams).error === "callback";
+  const params = await searchParams;
+  const callbackFailed = params.error === "callback";
+  const passwordUpdated = params.password === "updated";
   return (
     <AuthShell
       eyebrow="WELCOME BACK"
@@ -23,7 +25,7 @@ export default async function SignInPage({
       footer={<p>New to LeadFlow? <Link href="/sign-up">Create an account</Link></p>}
     >
       {!configured && <div className="form-alert error" role="alert">Supabase is not configured yet. Add your development project credentials to <code>.env</code>.</div>}
-      {configured && <SignInForm initialError={callbackFailed ? "That authentication link is invalid or expired. Please try again." : undefined} />}
+      {configured && <SignInForm initialError={callbackFailed ? "That authentication link is invalid or expired. Please try again." : undefined} initialMessage={passwordUpdated ? "Password updated successfully. Sign in with your new password." : undefined} />}
     </AuthShell>
   );
 }

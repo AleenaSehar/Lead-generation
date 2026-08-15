@@ -41,6 +41,7 @@ Removing the named volume permanently deletes the local database and is intentio
 - `SuppressionEntry` blocks contact after unsubscribe, bounce, complaint, manual, or legal events. Creating an entry also cancels unfinished sequence enrollment steps for the matching workspace lead.
 - `BookingPage` stores workspace availability and public scheduling rules; `Meeting` stores conflict-protected UTC reservations linked to leads.
 - `CrmConnection` stores provider-neutral configuration and mapping; `CrmContactLink` maintains one external identity per lead; `CrmSyncAttempt` records idempotent request, response, failure, and initiator history.
+- `Notification` stores deduplicated workspace events linked to leads; `NotificationRead` stores independent per-user read timestamps.
 - `CaptureForm` stores workspace-owned public form configuration.
 - `CaptureSubmission` records each accepted submission, its resulting lead, and a one-way rate-limit fingerprint.
 

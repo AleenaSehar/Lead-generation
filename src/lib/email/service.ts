@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-import { EmailEventType, LeadActivityType, SequenceEnrollmentStatus, SequenceStepRunStatus, SuppressionReason } from "@/generated/prisma/enums";
+import { EmailEventType, LeadActivityType, NotificationType, SequenceEnrollmentStatus, SequenceStepRunStatus, SuppressionReason } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { getEmailFrom } from "@/lib/email/config";
 import type { EmailProvider } from "@/lib/email/provider";
@@ -9,6 +9,7 @@ import { assertLeadPermission } from "@/lib/leads/permissions";
 import type { LeadServiceContext } from "@/lib/leads/service";
 import { suppressEmail } from "@/lib/suppressions/service";
 import { createUnsubscribeUrl } from "@/lib/suppressions/token";
+import { createNotification } from "@/lib/notifications/service";
 
 export async function sendLeadEmail(database: PrismaClient, provider: EmailProvider, context: LeadServiceContext, input: SendEmailInput, options: { idempotencyKey?: string } = {}) {
   assertLeadPermission(context.role, "update");
@@ -91,6 +92,9 @@ async function applyReply(database: PrismaClient, provider: string, input: Email
       create: { sourceKey: `email-reply:${provider}:${input.eventId}`, workspaceId, leadId, type: LeadActivityType.EMAIL_REPLIED, summary: preview ? `Email reply received: “${preview}”` : "Email reply received.", occurredAt, metadata: { provider, providerEventId: input.eventId, providerMessageId: input.messageId, sequenceEnrollmentId: stepRun?.enrollmentId ?? null, textPreview: preview } },
       update: {},
     });
+    const lead = await tx.lead.findUnique({ where: { id: leadId }, select: { firstName: true, lastName: true, email: true } });
+    const leadName = [lead?.firstName, lead?.lastName].filter(Boolean).join(" ") || lead?.email || "A lead";
+    await createNotification(tx, { workspaceId, leadId, type: NotificationType.EMAIL_REPLIED, title: "Email reply received", message: preview ? `${leadName}: “${preview}”` : `${leadName} replied to an email.`, dedupeKey: `email-replied:${provider}:${input.eventId}`, metadata: { provider, providerEventId: input.eventId, providerMessageId: input.messageId } });
     await tx.lead.update({ where: { id: leadId }, data: { lastActivityAt: occurredAt } });
   });
 }

@@ -2,7 +2,7 @@
 
 ## Current state
 
-LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, leads, capture forms, scoring, audit history, mock email events, sequence drafts and manual execution, suppression controls, booking pages, meetings, and CRM synchronization are persistent. CRM contacts can be synchronized through the local mock adapter or real HubSpot server API. Campaign reporting and some charts remain demonstrative until those phases are implemented.
+LeadFlow is a Next.js and TypeScript application with Supabase Auth plus PostgreSQL and Prisma. Authentication, cookie-based sessions, users, workspace membership, leads, capture forms, scoring, audit history, mock email events, reply detection, sequence drafts and manual execution, suppression controls, booking pages, meetings, CRM synchronization, and per-user team notification state are persistent. CRM contacts can be synchronized through the local mock adapter or real HubSpot server API. Campaign reporting and some charts remain demonstrative until those phases are implemented.
 
 The database schema, migrations, identity verification, workspace authorization, validation, role enforcement, and transaction boundaries are real. Email remains mocked, HubSpot contact synchronization is real when configured, and workflow execution is manual; there are no team invitations, enrichment provider, external calendar connection, or automatic background worker yet.
 
@@ -48,6 +48,7 @@ The initial domain models include:
 - SuppressionEntry
 - BookingPage and Meeting
 - CrmConnection, CrmContactLink, and CrmSyncAttempt
+- Notification and NotificationRead
 
 All business and operational records are scoped to a workspace. Database-level uniqueness, foreign keys, deletion behavior, and query indexes provide the first layer of consistency; application authorization will add the next layer.
 
@@ -71,6 +72,8 @@ Email, enrichment, calendar, CRM, and analytics providers sit behind internal se
 Outbound messages carry encrypted, authenticated unsubscribe tokens. Public unsubscribe actions and verified bounce/complaint webhooks converge on one idempotent suppression service. Verified reply events resolve identity through recorded provider message IDs, create idempotent lead activity, and transactionally stop only the matching sequence enrollment.
 7. **Observable operations:** Important workflow transitions and external calls create structured events.
 8. **Incremental delivery:** Each feature is developed and reviewed independently against `dev`.
+
+Workspace notifications separate shared event data from per-user read state. Business services create deduplicated notification records at their transaction boundaries, while `NotificationRead` records let each member manage an independent inbox without copying the underlying event.
 
 ## Environments
 

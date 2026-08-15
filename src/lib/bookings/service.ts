@@ -1,8 +1,9 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-import { LeadActivityType, LeadSourceType, MeetingStatus, WorkspaceRole } from "@/generated/prisma/enums";
+import { LeadActivityType, LeadSourceType, MeetingStatus, NotificationType, WorkspaceRole } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import type { LeadServiceContext } from "@/lib/leads/service";
+import { createNotification } from "@/lib/notifications/service";
 import type { Availability, BookingPageInput, PublicBookingInput } from "@/lib/bookings/validation";
 
 export const defaultAvailability: Availability = { "0": [], "1": [{ start: "09:00", end: "17:00" }], "2": [{ start: "09:00", end: "17:00" }], "3": [{ start: "09:00", end: "17:00" }], "4": [{ start: "09:00", end: "17:00" }], "5": [{ start: "09:00", end: "17:00" }], "6": [] };
@@ -74,6 +75,7 @@ export async function createPublicBooking(database: PrismaClient, publicId: stri
       const lead = existingLead ?? await tx.lead.create({ data: { workspaceId: bookingPage.workspaceId, email: input.attendeeEmail, firstName: input.attendeeName, source: LeadSourceType.WEBSITE, status: "NEW" } });
       const meeting = await tx.meeting.create({ data: { workspaceId: bookingPage.workspaceId, bookingPageId: bookingPage.id, leadId: lead.id, startAt: requested, endAt, attendeeName: input.attendeeName, attendeeEmail: input.attendeeEmail, attendeeTimeZone: input.attendeeTimeZone, notes: input.notes } });
       await tx.leadActivity.create({ data: { workspaceId: bookingPage.workspaceId, leadId: lead.id, type: LeadActivityType.MEETING_BOOKED, summary: `Meeting booked for ${requested.toISOString()}.`, occurredAt: now, metadata: { meetingId: meeting.id, startAt: requested.toISOString(), endAt: endAt.toISOString(), attendeeTimeZone: input.attendeeTimeZone } } });
+      await createNotification(tx, { workspaceId: bookingPage.workspaceId, leadId: lead.id, type: NotificationType.MEETING_BOOKED, title: "Meeting booked", message: `${input.attendeeName} booked ${bookingPage.title}.`, dedupeKey: `meeting-booked:${meeting.id}`, metadata: { meetingId: meeting.id, startAt: requested.toISOString() } });
       await tx.lead.update({ where: { id: lead.id }, data: { lastActivityAt: now } });
       return meeting;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

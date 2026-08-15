@@ -77,9 +77,10 @@ export async function requestPasswordReset(
   if (!parsed.success) return { error: firstIssue(parsed.error) };
 
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(parsed.data, {
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
     redirectTo: `${await getOrigin()}/auth/callback?next=/update-password`,
   });
+  if (error) return { error: "We could not send the reset link. Check your connection and try again shortly." };
 
   return { message: "If an account exists for that email, a password-reset link is on its way." };
 }
@@ -97,8 +98,8 @@ export async function updatePassword(
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) return { error: error.message };
-
-  return { message: "Your password has been updated. You can return to the dashboard." };
+  await supabase.auth.signOut();
+  redirect("/sign-in?password=updated");
 }
 
 export async function signOut() {
