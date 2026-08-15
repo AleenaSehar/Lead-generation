@@ -8,11 +8,12 @@ import { PasswordField } from "@/components/auth/password-field";
 
 const initialState: AuthActionState = {};
 
-export function SignInForm({ initialError }: { initialError?: string }) {
+export function SignInForm({ initialError, initialMessage }: { initialError?: string; initialMessage?: string }) {
   const [state, action] = useActionState(signIn, initialError ? { error: initialError } : initialState);
   return (
     <form className="auth-form" action={action}>
       {state.error && <div className="form-alert error" role="alert">{state.error}</div>}
+      {initialMessage && !state.error && <div className="form-alert success" role="status">{initialMessage}</div>}
       <label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@company.com" /></label>
       <label>
         <span>Password <Link href="/forgot-password">Forgot password?</Link></span>

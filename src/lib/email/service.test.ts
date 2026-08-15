@@ -97,6 +97,7 @@ describe("email delivery foundation", () => {
     expect(await database.sequenceEnrollment.findUnique({ where: { id: enrollment.id } })).toMatchObject({ status: SequenceEnrollmentStatus.REPLIED, nextRunAt: null });
     expect(await database.sequenceStepRun.findUnique({ where: { emailIdempotencyKey: `reply-step-1-${runId}` } })).toMatchObject({ status: SequenceStepRunStatus.CANCELLED, error: "Stopped because the lead replied." });
     expect(await database.leadActivity.count({ where: { leadId: target.id, type: "EMAIL_REPLIED" } })).toBe(1);
+    expect(await database.notification.count({ where: { leadId: target.id, type: "EMAIL_REPLIED" } })).toBe(1);
     expect((await database.lead.findUniqueOrThrow({ where: { id: target.id } })).lastActivityAt?.toISOString()).toBe(occurredAt.toISOString());
   });
 });

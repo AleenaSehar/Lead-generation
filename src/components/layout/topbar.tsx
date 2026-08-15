@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { NotificationCenter } from "@/components/layout/notification-center";
 
 export function Topbar({
   onMenu,
@@ -49,7 +50,7 @@ export function Topbar({
         <kbd>⌘ K</kbd>
       </form>
       <div className="top-actions">
-        <button className="icon-button" type="button" aria-label="Notifications">♢<i /></button>
+        <NotificationCenter />
         {canAddLead && <button className="primary-button" type="button" onClick={onAddLead}><span>＋</span>Add lead</button>}
       </div>
     </header>

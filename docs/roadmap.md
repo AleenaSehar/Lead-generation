@@ -40,7 +40,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 - [x] Calendar booking
 - [x] CRM synchronization
 - [x] Email reply detection
-- [ ] Team notifications
+- [x] Team notifications
 - [ ] Lead routing and ownership
 
 **Outcome:** outreach activity moves cleanly into sales conversations and existing team tools.

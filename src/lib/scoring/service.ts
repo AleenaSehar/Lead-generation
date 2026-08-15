@@ -1,8 +1,9 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-import { LeadActivityType, LeadStatus, ScoringRuleField, ScoringRuleOperator, WorkspaceRole } from "@/generated/prisma/enums";
+import { LeadActivityType, LeadStatus, NotificationType, ScoringRuleField, ScoringRuleOperator, WorkspaceRole } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import type { LeadServiceContext } from "@/lib/leads/service";
+import { createNotification, HIGH_SCORE_THRESHOLD } from "@/lib/notifications/service";
 import type { ScoringRuleInput, UpdateScoringRuleInput } from "@/lib/scoring/validation";
 
 type Rule = { id: string; name: string; field: ScoringRuleField; operator: ScoringRuleOperator; value: string | null; points: number };
@@ -70,10 +71,11 @@ export async function recalculateWorkspaceScores(database: PrismaClient, context
   for (const lead of leads) {
     const result = calculateLeadScore(lead, rules);
     if (result.score === lead.score && JSON.stringify(result.details) === JSON.stringify(lead.scoreDetails)) continue;
-    await database.$transaction([
-      database.lead.update({ where: { id: lead.id }, data: { score: result.score, scoreDetails: result.details as Prisma.InputJsonValue } }),
-      database.leadActivity.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, actorId: context.userId, type: LeadActivityType.SCORE_CHANGED, summary: `Lead score recalculated from ${lead.score} to ${result.score}.`, metadata: { from: lead.score, to: result.score, matchedRules: result.details.matchedRules } } }),
-    ]);
+    await database.$transaction(async (tx) => {
+      const updated = await tx.lead.update({ where: { id: lead.id }, data: { score: result.score, scoreDetails: result.details as Prisma.InputJsonValue } });
+      await tx.leadActivity.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, actorId: context.userId, type: LeadActivityType.SCORE_CHANGED, summary: `Lead score recalculated from ${lead.score} to ${result.score}.`, metadata: { from: lead.score, to: result.score, matchedRules: result.details.matchedRules } } });
+      if (result.score >= HIGH_SCORE_THRESHOLD && lead.score < HIGH_SCORE_THRESHOLD) { const name = [lead.firstName, lead.lastName].filter(Boolean).join(" ") || lead.email || "A lead"; await createNotification(tx, { workspaceId: context.workspaceId, leadId: lead.id, type: NotificationType.HIGH_SCORE, title: "High-score lead", message: `${name} reached a score of ${result.score}.`, dedupeKey: `high-score:${lead.id}:${updated.updatedAt.toISOString()}`, metadata: { score: result.score, threshold: HIGH_SCORE_THRESHOLD } }); }
+    });
     changed++;
   }
   return { total: leads.length, changed };

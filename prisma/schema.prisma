@@ -140,6 +140,14 @@ enum CrmSyncStatus {
   FAILED
 }
 
+enum NotificationType {
+  LEAD_QUALIFIED
+  HIGH_SCORE
+  EMAIL_REPLIED
+  MEETING_BOOKED
+  CRM_SYNC_FAILED
+}
+
 enum CaptureFormStatus {
   ACTIVE
   INACTIVE
@@ -179,6 +187,7 @@ model User {
   createdForms     CaptureForm[]     @relation("CaptureFormCreator")
   createdBookingPages BookingPage[]  @relation("BookingPageCreator")
   crmSyncAttempts CrmSyncAttempt[]    @relation("CrmSyncInitiator")
+  notificationReads NotificationRead[]
 }
 
 model Workspace {
@@ -205,6 +214,7 @@ model Workspace {
   crmConnection      CrmConnection?
   crmContactLinks    CrmContactLink[]
   crmSyncAttempts    CrmSyncAttempt[]
+  notifications      Notification[]
 }
 
 model ScoringRule {
@@ -272,6 +282,7 @@ model Lead {
   meetings       Meeting[]
   crmContactLinks CrmContactLink[]
   crmSyncAttempts CrmSyncAttempt[]
+  notifications Notification[]
 
   @@unique([workspaceId, email])
   @@index([workspaceId, status])
@@ -279,6 +290,36 @@ model Lead {
   @@index([workspaceId, createdAt])
   @@index([ownerId])
   @@index([campaignId])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  dedupeKey   String           @unique
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  workspaceId String
+  leadId      String?
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead        Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  reads       NotificationRead[]
+
+  @@index([workspaceId, createdAt])
+  @@index([leadId, createdAt])
+}
+
+model NotificationRead {
+  id             String       @id @default(cuid())
+  readAt         DateTime     @default(now())
+  notificationId String
+  userId         String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
 }
 
 model CrmConnection {

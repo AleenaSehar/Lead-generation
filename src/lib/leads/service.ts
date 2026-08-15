@@ -3,11 +3,13 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   LeadActivityType,
   LeadStatus,
+  NotificationType,
   type WorkspaceRole,
 } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { assertLeadPermission } from "@/lib/leads/permissions";
 import { calculateLeadScore } from "@/lib/scoring/service";
+import { createNotification, HIGH_SCORE_THRESHOLD } from "@/lib/notifications/service";
 import type {
   CreateLeadInput,
   LeadListQuery,
@@ -212,6 +214,10 @@ export async function createLead(
       },
     });
 
+    const leadName = [lead.firstName, lead.lastName].filter(Boolean).join(" ") || lead.email || "A lead";
+    if (lead.status === LeadStatus.QUALIFIED) await createNotification(transaction, { workspaceId: context.workspaceId, leadId: lead.id, type: NotificationType.LEAD_QUALIFIED, title: "Lead qualified", message: `${leadName} entered the qualified pipeline.`, dedupeKey: `lead-qualified:${lead.id}:${lead.updatedAt.toISOString()}` });
+    if (lead.score >= HIGH_SCORE_THRESHOLD) await createNotification(transaction, { workspaceId: context.workspaceId, leadId: lead.id, type: NotificationType.HIGH_SCORE, title: "High-score lead", message: `${leadName} reached a score of ${lead.score}.`, dedupeKey: `high-score:${lead.id}:${lead.updatedAt.toISOString()}`, metadata: { score: lead.score, threshold: HIGH_SCORE_THRESHOLD } });
+
     return lead;
   });
 }
@@ -302,6 +308,9 @@ export async function updateLead(
     }
 
     if (activities.length) await transaction.leadActivity.createMany({ data: activities });
+    const leadName = [updated.firstName, updated.lastName].filter(Boolean).join(" ") || updated.email || "A lead";
+    if (updated.status === LeadStatus.QUALIFIED && current.status !== LeadStatus.QUALIFIED) await createNotification(transaction, { workspaceId: context.workspaceId, leadId: updated.id, type: NotificationType.LEAD_QUALIFIED, title: "Lead qualified", message: `${leadName} entered the qualified pipeline.`, dedupeKey: `lead-qualified:${updated.id}:${updated.updatedAt.toISOString()}` });
+    if (updated.score >= HIGH_SCORE_THRESHOLD && current.score < HIGH_SCORE_THRESHOLD) await createNotification(transaction, { workspaceId: context.workspaceId, leadId: updated.id, type: NotificationType.HIGH_SCORE, title: "High-score lead", message: `${leadName} reached a score of ${updated.score}.`, dedupeKey: `high-score:${updated.id}:${updated.updatedAt.toISOString()}`, metadata: { score: updated.score, threshold: HIGH_SCORE_THRESHOLD } });
     return updated;
   });
 }

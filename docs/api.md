@@ -172,6 +172,14 @@ The public booking operation recalculates availability and uses a serializable t
 
 The mock provider stays local. The HubSpot provider uses the server-only `HUBSPOT_ACCESS_TOKEN` and upserts contacts by email before retaining their remote contact ID. Unchanged lead snapshots reuse completed attempts, while modified leads create a new attempt linked to the same external contact.
 
+### Team notifications
+
+- `GET /api/notifications` returns the latest 50 workspace notifications, the current user's `readAt` value for each item, and their unread count.
+- `PATCH /api/notifications/:notificationId` marks one workspace notification read for the current user.
+- `PATCH /api/notifications` marks every currently unread workspace notification read for the current user.
+
+All workspace roles may use these endpoints. Read state is per user, notification queries are workspace-scoped, and stable event keys prevent duplicate alerts.
+
 Webhook payloads contain `eventId`, `messageId`, `type`, `occurredAt`, and optional `metadata`. `eventId` is globally unique, so repeated provider delivery is acknowledged without duplicating the event.
 
 ## Email sequence drafts
