@@ -1,4 +1,5 @@
 @import "../../public/styles.css";
+@import "../../public/routing.css";
 
 :root {
   --font-dm-sans: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;

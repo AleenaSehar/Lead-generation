@@ -6,8 +6,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads } from "@/components/leads/lead-provider";
 import { PageHeading } from "@/components/shared/page-heading";
 import { formatLeadStatus, getInitials, getLeadName } from "@/lib/leads";
-import type { Lead, LeadStatus } from "@/types/lead";
+import type { Lead, LeadSource, LeadStatus } from "@/types/lead";
 import { LeadDetailDrawer } from "@/components/leads/lead-detail-drawer";
+
+type RoutingMember = { id: string; name: string | null; email: string; role: string };
+type RoutingRule = { id: string; name: string; type: "SOURCE" | "MIN_SCORE"; source: LeadSource | null; minScore: number | null; owner: { name: string | null; email: string } };
+type RoutingOverview = { mode: "MANUAL" | "ROUND_ROBIN"; members: RoutingMember[]; rules: RoutingRule[] };
 
 const columns: { status: Exclude<LeadStatus, "ARCHIVED">; label: string; tone: string }[] = [
   { status: "NEW", label: "New", tone: "blue" },
@@ -36,6 +40,11 @@ export function LeadPipeline() {
   const [pendingLead, setPendingLead] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [routing, setRouting] = useState<RoutingOverview | null>(null);
+  const [ruleType, setRuleType] = useState<RoutingRule["type"]>("SOURCE");
+  const [ruleValue, setRuleValue] = useState("WEBSITE");
+  const [ruleOwnerId, setRuleOwnerId] = useState("");
   const closeDetails = useCallback(() => setDetailLeadId(null), []);
   const refreshDetails = useCallback(() => { void loadLeads(); }, [loadLeads]);
 
@@ -47,10 +56,40 @@ export function LeadPipeline() {
         search: query.trim() || undefined,
         sort: "lastActivityAt",
         order: "desc",
+        ownerId: ownerFilter || undefined,
       });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [loadLeads, query]);
+  }, [loadLeads, ownerFilter, query]);
+  const loadRouting = useCallback(async () => { const response = await fetch("/api/routing"); const body = await response.json(); if (body.data) { setRouting(body.data); setRuleOwnerId((current) => current || body.data.members[0]?.id || ""); } }, []);
+  useEffect(() => { const timer = window.setTimeout(() => void loadRouting(), 0); return () => window.clearTimeout(timer); }, [loadRouting]);
+
+  async function changeRoutingMode(mode: RoutingOverview["mode"]) {
+    setActionError(null);
+    try {
+      const response = await fetch("/api/routing", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message ?? "Unable to update routing.");
+      setRouting((current) => current ? { ...current, mode: body.data.routingMode } : current);
+    } catch (requestError) { setActionError(requestError instanceof Error ? requestError.message : "Unable to update routing."); }
+  }
+
+  async function addRoutingRule() {
+    if (!ruleOwnerId) return;
+    const source = ruleType === "SOURCE" ? ruleValue : null;
+    const minScore = ruleType === "MIN_SCORE" ? Number(ruleValue) : null;
+    const label = ruleType === "SOURCE" ? `${formatLeadStatus(source as LeadSource)} leads` : `Score ${minScore}+`;
+    setActionError(null);
+    try {
+      const response = await fetch("/api/routing/rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: label, type: ruleType, ownerId: ruleOwnerId, source, minScore }) });
+      const body = await response.json(); if (!response.ok) throw new Error(body.error?.message ?? "Unable to add routing rule."); await loadRouting();
+    } catch (requestError) { setActionError(requestError instanceof Error ? requestError.message : "Unable to add routing rule."); }
+  }
+
+  async function deleteRoutingRule(ruleId: string) {
+    const response = await fetch(`/api/routing/rules/${ruleId}`, { method: "DELETE" });
+    const body = await response.json(); if (!response.ok) { setActionError(body.error?.message ?? "Unable to delete routing rule."); return; } await loadRouting();
+  }
   useEffect(() => { const requested = searchParams.get("leadId"); if (!requested) return; const timer = window.setTimeout(() => setDetailLeadId(requested), 0); return () => window.clearTimeout(timer); }, [searchParams]);
 
   const grouped = useMemo(
@@ -113,6 +152,8 @@ export function LeadPipeline() {
         <PipelineStat label="Converted" value={summary.converted} tone="purple" />
       </div>
 
+      {canArchive && routing && <article className="panel routing-panel"><header><div><h2>Automatic ownership rules</h2><p>Rules run top to bottom before the default new-lead routing mode.</p></div><span>{routing.rules.length} rules</span></header><div className="routing-rule-create"><select value={ruleType} onChange={(event) => { const type = event.target.value as RoutingRule["type"]; setRuleType(type); setRuleValue(type === "SOURCE" ? "WEBSITE" : "70"); }}><option value="SOURCE">Lead source is</option><option value="MIN_SCORE">Score is at least</option></select>{ruleType === "SOURCE" ? <select value={ruleValue} onChange={(event) => setRuleValue(event.target.value)}>{["WEBSITE", "LINKEDIN", "REFERRAL", "CSV_IMPORT", "MANUAL", "API", "OTHER"].map((source) => <option key={source} value={source}>{formatLeadStatus(source)}</option>)}</select> : <input aria-label="Minimum lead score" min="0" max="100" type="number" value={ruleValue} onChange={(event) => setRuleValue(event.target.value)} />}<span>assign to</span><select value={ruleOwnerId} onChange={(event) => setRuleOwnerId(event.target.value)}>{routing.members.map((member) => <option key={member.id} value={member.id}>{member.name ?? member.email}</option>)}</select><button className="secondary-button" type="button" onClick={() => void addRoutingRule()}>Add rule</button></div>{routing.rules.length > 0 && <div className="routing-rule-list">{routing.rules.map((rule) => <div key={rule.id}><span>{rule.type === "SOURCE" ? `${formatLeadStatus(rule.source ?? "OTHER")} source` : `Score ≥ ${rule.minScore}`}</span><strong>→ {rule.owner.name ?? rule.owner.email}</strong><button aria-label={`Delete ${rule.name}`} onClick={() => void deleteRoutingRule(rule.id)}>×</button></div>)}</div>}</article>}
+
       <article className="panel kanban-panel">
         <div className="kanban-toolbar">
           <div className="search table-search">
@@ -124,6 +165,10 @@ export function LeadPipeline() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by name, email, or company"
             />
+          </div>
+          <div className="lead-owner-controls">
+            <label>Owner<select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}><option value="">All owners</option><option value="unassigned">Unassigned</option>{routing?.members.map((member) => <option key={member.id} value={member.id}>{member.name ?? member.email}</option>)}</select></label>
+            {canArchive && <label>New leads<select value={routing?.mode ?? "MANUAL"} onChange={(event) => void changeRoutingMode(event.target.value as RoutingOverview["mode"])}><option value="MANUAL">Creator owns lead</option><option value="ROUND_ROBIN">Round robin</option></select></label>}
           </div>
           <p>{canUpdate ? "Drag cards to change their status" : "Your workspace role has read-only access"}</p>
         </div>
@@ -189,6 +234,7 @@ export function LeadPipeline() {
                           <span>{lead.companyName || "No company"}</span>
                           <b className="lead-score" title={lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => `${rule.name}: ${rule.points > 0 ? "+" : ""}${rule.points}`).join("\n") : "No scoring rules matched"}>✦ {lead.score}<span className="score-tooltip">{lead.scoreDetails?.matchedRules?.length ? lead.scoreDetails.matchedRules.map((rule) => <small key={rule.id}>{rule.name} <em>{rule.points > 0 ? "+" : ""}{rule.points}</em></small>) : <small>No rules matched</small>}</span></b>
                         </div>
+                        <div className="lead-card-owner"><small>Owner</small><span>{lead.owner?.name ?? lead.owner?.email ?? "Unassigned"}</span></div>
                         <footer>
                           <span>{formatLeadStatus(lead.source)}</span>
                           <div className="lead-card-actions"><button type="button" onClick={() => setDetailLeadId(lead.id)}>View details</button>{canArchive && (

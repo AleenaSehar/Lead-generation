@@ -47,6 +47,7 @@ export const leadListQuerySchema = z.object({
   status: z.enum(LeadStatus).optional(),
   source: z.enum(LeadSourceType).optional(),
   minScore: z.coerce.number().int().min(0).max(100).optional(),
+  ownerId: z.union([z.string().cuid(), z.literal("unassigned")]).optional(),
   sort: z.enum(["createdAt", "updatedAt", "score", "lastActivityAt"]).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("desc"),
 });

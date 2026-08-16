@@ -130,6 +130,7 @@ The dependency audit is scoped to production packages because development-only t
 - Encrypted public unsubscribe links, workspace suppression management, bounce/complaint controls, and automatic sequence cancellation
 - Signed, idempotent email reply detection with lead timeline visibility and automatic stopping of the matching sequence
 - Workspace notification center with personal unread state, deduplicated business events, and direct lead links
+- Lead ownership with teammate filtering, manual reassignment, audited changes, targeted alerts, and round-robin routing
 - Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
 - Provider-independent CRM synchronization with local mock and real HubSpot contact adapters, field mapping, durable contact links, idempotent retries, and audit history
 
@@ -160,6 +161,8 @@ Every generated email includes an encrypted, authenticated unsubscribe URL. Owne
 Signed reply callbacks are matched through recorded provider message IDs. Replies appear in the lead drawer and stop the matching sequence without affecting unrelated enrollments. See [docs/email-replies.md](docs/email-replies.md).
 
 The top-bar notification center alerts workspace members about qualified and high-score leads, replies, meetings, and CRM failures. Read state is personal to each member. See [docs/team-notifications.md](docs/team-notifications.md).
+
+Lead cards show their responsible owner. Owners and admins can switch new-lead routing between creator ownership and round robin, while editable roles can reassign leads from the detail drawer. See [docs/lead-routing.md](docs/lead-routing.md).
 
 Owners and admins publish workspace availability at `/bookings`. Public bookings create or link leads, appear on the overview, and record timeline activity. See [docs/calendar-booking.md](docs/calendar-booking.md).
 

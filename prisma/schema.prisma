@@ -146,6 +146,17 @@ enum NotificationType {
   EMAIL_REPLIED
   MEETING_BOOKED
   CRM_SYNC_FAILED
+  LEAD_ASSIGNED
+}
+
+enum LeadRoutingMode {
+  MANUAL
+  ROUND_ROBIN
+}
+
+enum LeadRoutingRuleType {
+  SOURCE
+  MIN_SCORE
 }
 
 enum CaptureFormStatus {
@@ -188,6 +199,8 @@ model User {
   createdBookingPages BookingPage[]  @relation("BookingPageCreator")
   crmSyncAttempts CrmSyncAttempt[]    @relation("CrmSyncInitiator")
   notificationReads NotificationRead[]
+  targetedNotifications Notification[] @relation("NotificationRecipient")
+  routingRules     LeadRoutingRule[] @relation("RoutingRuleOwner")
 }
 
 model Workspace {
@@ -215,6 +228,9 @@ model Workspace {
   crmContactLinks    CrmContactLink[]
   crmSyncAttempts    CrmSyncAttempt[]
   notifications      Notification[]
+  routingMode        LeadRoutingMode    @default(MANUAL)
+  routingCursor      Int                @default(0)
+  routingRules       LeadRoutingRule[]
 }
 
 model ScoringRule {
@@ -246,6 +262,25 @@ model WorkspaceMember {
 
   @@unique([workspaceId, userId])
   @@index([userId])
+}
+
+model LeadRoutingRule {
+  id          String              @id @default(cuid())
+  name        String
+  type        LeadRoutingRuleType
+  source      LeadSourceType?
+  minScore    Int?
+  position    Int                 @default(0)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  workspaceId String
+  ownerId     String
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User                @relation("RoutingRuleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, isActive, position])
+  @@index([ownerId])
 }
 
 model Lead {
@@ -302,12 +337,15 @@ model Notification {
   createdAt   DateTime         @default(now())
   workspaceId String
   leadId      String?
+  recipientId String?
   workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   lead        Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  recipient   User?            @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   reads       NotificationRead[]
 
   @@index([workspaceId, createdAt])
   @@index([leadId, createdAt])
+  @@index([recipientId, createdAt])
 }
 
 model NotificationRead {

@@ -4,7 +4,7 @@ import {
   LeadActivityType,
   LeadStatus,
   NotificationType,
-  type WorkspaceRole,
+  WorkspaceRole,
 } from "@/generated/prisma/enums";
 import { ApiError } from "@/lib/api/errors";
 import { assertLeadPermission } from "@/lib/leads/permissions";
@@ -41,6 +41,7 @@ export async function listLeads(
     ...(query.status ? { status: query.status } : { status: { not: LeadStatus.ARCHIVED } }),
     ...(query.source ? { source: query.source } : {}),
     ...(query.minScore !== undefined ? { score: { gte: query.minScore } } : {}),
+    ...(query.ownerId ? { ownerId: query.ownerId === "unassigned" ? null : query.ownerId } : {}),
     ...(query.search
       ? {
           OR: [
@@ -61,6 +62,7 @@ export async function listLeads(
   const [leads, total, statusCounts, sourceCounts] = await Promise.all([
     database.lead.findMany({
       where,
+      include: { owner: { select: { id: true, name: true, email: true, imageUrl: true } } },
       orderBy: { [query.sort]: query.order },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
@@ -125,6 +127,7 @@ export async function getLead(
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
         take: 20,
       },
+      owner: { select: { id: true, name: true, email: true, imageUrl: true } },
     },
   });
   if (!lead) throw new ApiError(404, "LEAD_NOT_FOUND", "Lead was not found.");
@@ -180,10 +183,26 @@ export async function createLead(
   }, rules);
 
   return database.$transaction(async (transaction) => {
+    await transaction.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${context.workspaceId} FOR UPDATE`;
+    const workspace = await transaction.workspace.findUniqueOrThrow({ where: { id: context.workspaceId }, select: { routingMode: true, routingCursor: true } });
+    let ownerId = context.userId;
+    let routingReason = "CREATOR";
+    const routingRules = await transaction.leadRoutingRule.findMany({ where: { workspaceId: context.workspaceId, isActive: true, owner: { memberships: { some: { workspaceId: context.workspaceId, role: { not: WorkspaceRole.VIEWER } } } } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
+    const leadScore = rules.length ? scoring.score : input.score;
+    const matchedRoutingRule = routingRules.find((rule) => (rule.type === "SOURCE" && rule.source === input.source) || (rule.type === "MIN_SCORE" && rule.minScore !== null && leadScore >= rule.minScore));
+    if (matchedRoutingRule) {
+      ownerId = matchedRoutingRule.ownerId;
+      routingReason = `RULE:${matchedRoutingRule.id}`;
+    } else if (workspace.routingMode === "ROUND_ROBIN") {
+      const eligible = await transaction.workspaceMember.findMany({ where: { workspaceId: context.workspaceId, role: { not: WorkspaceRole.VIEWER } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { userId: true } });
+      ownerId = eligible.length ? eligible[workspace.routingCursor % eligible.length].userId : context.userId;
+      if (eligible.length) await transaction.workspace.update({ where: { id: context.workspaceId }, data: { routingCursor: { increment: 1 } } });
+      routingReason = "ROUND_ROBIN";
+    }
     const lead = await transaction.lead.create({
       data: {
         workspaceId: context.workspaceId,
-        ownerId: context.userId,
+        ownerId,
         firstName: input.firstName,
         lastName: input.lastName,
         email: input.email,
@@ -213,6 +232,13 @@ export async function createLead(
         occurredAt: now,
       },
     });
+
+    if (ownerId !== context.userId) {
+      const rule = matchedRoutingRule?.name;
+      await transaction.leadActivity.create({ data: { workspaceId: context.workspaceId, leadId: lead.id, actorId: context.userId, type: LeadActivityType.ASSIGNED, summary: rule ? `Lead assigned automatically by routing rule “${rule}”.` : "Lead assigned automatically by round-robin routing.", metadata: { toOwnerId: ownerId, routingReason }, occurredAt: now } });
+      const leadName = [lead.firstName, lead.lastName].filter(Boolean).join(" ") || lead.email || "A lead";
+      await createNotification(transaction, { workspaceId: context.workspaceId, leadId: lead.id, recipientId: ownerId, type: NotificationType.LEAD_ASSIGNED, title: "Lead assigned to you", message: rule ? `${leadName} matched routing rule “${rule}”.` : `${leadName} was assigned by round-robin routing.`, dedupeKey: `lead-assigned:${lead.id}:${ownerId}` });
+    }
 
     const leadName = [lead.firstName, lead.lastName].filter(Boolean).join(" ") || lead.email || "A lead";
     if (lead.status === LeadStatus.QUALIFIED) await createNotification(transaction, { workspaceId: context.workspaceId, leadId: lead.id, type: NotificationType.LEAD_QUALIFIED, title: "Lead qualified", message: `${leadName} entered the qualified pipeline.`, dedupeKey: `lead-qualified:${lead.id}:${lead.updatedAt.toISOString()}` });

@@ -9,6 +9,7 @@ type EmailEvent = { id: string; type: string; provider: string; providerMessageI
 type LeadDetail = Lead & { suppression: { reason: string; details: string | null } | null; activities: Activity[]; emailEvents: EmailEvent[]; activityPagination: { page: number; pageSize: number; total: number; totalPages: number } };
 type SequenceSummary = { id: string; name: string; steps: { id: string }[] };
 type Enrollment = { id: string; status: string; nextRunAt: string | null; error: string | null; emailSequence: { name: string }; stepRuns: { id: string; position: number; subject: string; status: string; scheduledAt: string; attempts: number; error: string | null }[] };
+type RoutingMember = { id: string; name: string | null; email: string; role: string };
 
 const activityIcons: Record<string, string> = { CREATED: "+", UPDATED: "✎", SCORE_CHANGED: "✦", STATUS_CHANGED: "↗", FORM_SUBMITTED: "▤", NOTE_ADDED: "●", ASSIGNED: "◎", EMAIL_SENT: "✉", EMAIL_REPLIED: "↩", EMAIL_BOUNCED: "!", EMAIL_COMPLAINED: "!", EMAIL_UNSUBSCRIBED: "×", SUPPRESSION_CHANGED: "⊘", CRM_SYNCED: "◇", CRM_SYNC_FAILED: "!" };
 
@@ -35,6 +36,7 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [members, setMembers] = useState<RoutingMember[]>([]);
 
   const load = useCallback(async (nextPage = 1) => {
     setLoading(true); setError("");
@@ -42,8 +44,9 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
       const detail = await request<LeadDetail>(`/api/leads/${leadId}?page=${nextPage}&pageSize=15`);
       setLead(detail); setActivities((current) => nextPage === 1 ? detail.activities : [...current, ...detail.activities]); setPage(nextPage);
       if (nextPage === 1) {
-        const [availableSequences, leadEnrollments] = await Promise.all([request<SequenceSummary[]>("/api/email-sequences"), request<Enrollment[]>(`/api/sequence-enrollments?leadId=${encodeURIComponent(leadId)}`)]);
+        const [availableSequences, leadEnrollments, routing] = await Promise.all([request<SequenceSummary[]>("/api/email-sequences"), request<Enrollment[]>(`/api/sequence-enrollments?leadId=${encodeURIComponent(leadId)}`), request<{ members: RoutingMember[] }>("/api/routing")]);
         setSequences(availableSequences); setEnrollments(leadEnrollments); setSequenceId((current) => current || availableSequences[0]?.id || "");
+        setMembers(routing.members);
       }
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Unable to load lead details."); }
     finally { setLoading(false); }
@@ -96,6 +99,13 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
     finally { setBusy(false); }
   }
 
+  async function assignOwner(ownerId: string) {
+    setBusy(true); setError("");
+    try { await request(`/api/leads/${leadId}/owner`, { method: "PATCH", body: JSON.stringify({ ownerId: ownerId || null }) }); await load(); onChanged(); }
+    catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Unable to assign lead owner."); }
+    finally { setBusy(false); }
+  }
+
   const name = lead ? getLeadName(lead) : "Lead details";
   const visibleActivities = useMemo(() => activities.filter((activity) => {
     if (activity.type !== "UPDATED") return true;
@@ -110,6 +120,7 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
         <section className="lead-detail-summary">
           <div><small>Status</small><strong>{formatLeadStatus(lead.status)}</strong></div><div><small>Score</small><strong className="drawer-score">✦ {lead.score}</strong></div><div><small>Source</small><strong>{formatLeadStatus(lead.source)}</strong></div>
         </section>
+        <section className="lead-owner-card"><div><h3>Lead owner</h3><p>The teammate responsible for the next action.</p></div>{canAddNote ? <select disabled={busy} value={lead.ownerId ?? ""} onChange={(event) => void assignOwner(event.target.value)}><option value="">Unassigned</option>{members.map((member) => <option key={member.id} value={member.id}>{member.name ?? member.email} · {member.role.toLowerCase()}</option>)}</select> : <strong>{lead.owner?.name ?? lead.owner?.email ?? "Unassigned"}</strong>}</section>
         <section className="lead-contact-card"><h3>Contact and company</h3><dl>
           <div><dt>Email</dt><dd>{lead.email ?? "Not provided"}</dd></div><div><dt>Phone</dt><dd>{lead.phone ?? "Not provided"}</dd></div><div><dt>Job title</dt><dd>{lead.jobTitle ?? "Not provided"}</dd></div><div><dt>Company</dt><dd>{lead.companyName ?? "Not provided"}</dd></div><div><dt>Domain</dt><dd>{lead.companyDomain ?? "Not provided"}</dd></div><div><dt>Contact eligibility</dt><dd className={lead.suppression || !lead.consentAt ? "contact-blocked" : "contact-allowed"}>{lead.suppression ? `Suppressed · ${formatLeadStatus(lead.suppression.reason)}` : lead.consentAt ? "Eligible" : "No consent"}</dd></div>
         </dl></section>

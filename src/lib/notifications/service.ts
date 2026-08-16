@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import type { LeadServiceContext } from "@/lib/leads/service";
 
 type Database = PrismaClient | Prisma.TransactionClient;
-type NotificationInput = { workspaceId: string; leadId?: string; type: NotificationType; title: string; message: string; dedupeKey: string; metadata?: Prisma.InputJsonValue };
+type NotificationInput = { workspaceId: string; leadId?: string; recipientId?: string; type: NotificationType; title: string; message: string; dedupeKey: string; metadata?: Prisma.InputJsonValue };
 
 export const HIGH_SCORE_THRESHOLD = 70;
 
@@ -15,8 +15,8 @@ export async function createNotification(database: Database, input: Notification
 
 export async function listNotifications(database: PrismaClient, context: LeadServiceContext) {
   const [notifications, unreadCount] = await Promise.all([
-    database.notification.findMany({ where: { workspaceId: context.workspaceId }, include: { reads: { where: { userId: context.userId }, select: { readAt: true } }, lead: { select: { id: true, firstName: true, lastName: true, email: true } } }, orderBy: { createdAt: "desc" }, take: 50 }),
-    database.notification.count({ where: { workspaceId: context.workspaceId, reads: { none: { userId: context.userId } } } }),
+    database.notification.findMany({ where: { workspaceId: context.workspaceId, OR: [{ recipientId: null }, { recipientId: context.userId }] }, include: { reads: { where: { userId: context.userId }, select: { readAt: true } }, lead: { select: { id: true, firstName: true, lastName: true, email: true } } }, orderBy: { createdAt: "desc" }, take: 50 }),
+    database.notification.count({ where: { workspaceId: context.workspaceId, OR: [{ recipientId: null }, { recipientId: context.userId }], reads: { none: { userId: context.userId } } } }),
   ]);
   return { unreadCount, notifications: notifications.map(({ reads, ...notification }) => ({ ...notification, readAt: reads[0]?.readAt ?? null })) };
 }
@@ -28,7 +28,7 @@ export async function markNotificationRead(database: PrismaClient, context: Lead
 }
 
 export async function markAllNotificationsRead(database: PrismaClient, context: LeadServiceContext) {
-  const unread = await database.notification.findMany({ where: { workspaceId: context.workspaceId, reads: { none: { userId: context.userId } } }, select: { id: true } });
+  const unread = await database.notification.findMany({ where: { workspaceId: context.workspaceId, OR: [{ recipientId: null }, { recipientId: context.userId }], reads: { none: { userId: context.userId } } }, select: { id: true } });
   if (unread.length) await database.notificationRead.createMany({ data: unread.map(({ id }) => ({ notificationId: id, userId: context.userId })), skipDuplicates: true });
   return { marked: unread.length };
 }
