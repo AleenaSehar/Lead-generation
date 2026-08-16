@@ -24,6 +24,7 @@ Optional query parameters:
 - `search` matches name, email, company name, or company domain.
 - `status` and `source` accept their schema enum values.
 - `minScore` accepts an integer from `0` to `100`.
+- `ownerId` accepts a workspace user ID or `unassigned`.
 - `sort` accepts `createdAt`, `updatedAt`, `score`, or `lastActivityAt`.
 - `order` accepts `asc` or `desc`.
 
@@ -82,6 +83,16 @@ A successful create returns `201` with `{ "data": lead }`. A duplicate email in 
 - `POST /api/leads/:leadId/notes` accepts `{ "note": "..." }` and creates an attributed `NOTE_ADDED` activity. Owners, admins, and members may add notes; viewers are read-only.
 
 Updates automatically add an `UPDATED` activity. Status and score changes also add specific activity records. The lead write and activities are committed in one database transaction.
+
+## Lead routing and ownership
+
+- `GET /api/routing` returns the routing mode and eligible workspace members.
+- `PATCH /api/routing` accepts `{ "mode": "MANUAL" }` or `{ "mode": "ROUND_ROBIN" }`; only owners and admins may change it.
+- `POST /api/routing/rules` creates an ordered `SOURCE` or `MIN_SCORE` ownership rule.
+- `DELETE /api/routing/rules/:ruleId` removes a workspace routing rule.
+- `PATCH /api/leads/:leadId/owner` accepts `{ "ownerId": "user-id" }` or `{ "ownerId": null }`.
+
+Assignments are restricted to non-viewer members of the active workspace. Source and minimum-score rules run in display order before the default routing mode. Each change creates an `ASSIGNED` timeline event, and a newly assigned teammate receives a private notification. Round-robin selection locks the workspace routing cursor inside the lead-creation transaction to avoid duplicate turns under concurrent requests.
 
 ## Errors
 

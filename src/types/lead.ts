@@ -33,6 +33,8 @@ export interface Lead {
   lastActivityAt: string | null;
   createdAt: string;
   updatedAt: string;
+  ownerId: string | null;
+  owner?: { id: string; name: string | null; email: string; imageUrl: string | null } | null;
 }
 
 export interface NewLead {

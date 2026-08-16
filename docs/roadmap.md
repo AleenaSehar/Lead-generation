@@ -41,7 +41,7 @@ Each item below is intended to ship as a focused pull request into `dev`. Depend
 - [x] CRM synchronization
 - [x] Email reply detection
 - [x] Team notifications
-- [ ] Lead routing and ownership
+- [x] Lead routing and ownership
 
 **Outcome:** outreach activity moves cleanly into sales conversations and existing team tools.
 

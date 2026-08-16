@@ -22,6 +22,7 @@ interface LeadQuery {
   pageSize?: number;
   search?: string;
   status?: LeadStatus;
+  ownerId?: string;
   sort?: "createdAt" | "updatedAt" | "score" | "lastActivityAt";
   order?: "asc" | "desc";
 }
