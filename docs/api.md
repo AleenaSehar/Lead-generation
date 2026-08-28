@@ -147,6 +147,12 @@ The dashboard uses these endpoints for list, search, filtering, creation, status
 
 Authenticated workspaces use `GET/POST /api/scoring-rules`, `PATCH/DELETE /api/scoring-rules/:ruleId`, and `POST /api/scoring-rules/recalculate`. Owners and admins may mutate rules and run recalculation; all workspace roles may list rules.
 
+### AI lead insight
+
+- `POST /api/leads/:leadId/ai-insight` generates a qualitative fit assessment for a lead — an AI fit score, summary, grounded reasons, and a suggested next action. Owners, admins, and members may invoke it.
+
+The mock provider stays local and deterministic. The Groq provider uses the server-only `GROQ_API_KEY` and the `openai/gpt-oss-20b` model, requesting strict JSON output that is schema-validated before it is ever persisted. The result is stored on the lead (`aiInsight`, `aiInsightGeneratedAt`) alongside — never merged into — the rule-based score, and each generation is recorded as an `AI_INSIGHT_GENERATED` activity.
+
 ## Email delivery foundation
 
 - `POST /api/emails/send` accepts `leadId`, `subject`, `text`, and optional `html`. Owners, admins, and members may create an attempt. The lead must belong to the workspace, have an email and recorded consent, and not be suppressed.
