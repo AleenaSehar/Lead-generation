@@ -183,6 +183,12 @@ The public booking operation recalculates availability and uses a serializable t
 
 The mock provider stays local. The HubSpot provider uses the server-only `HUBSPOT_ACCESS_TOKEN` and upserts contacts by email before retaining their remote contact ID. Unchanged lead snapshots reuse completed attempts, while modified leads create a new attempt linked to the same external contact.
 
+### AI lead insight
+
+- `POST /api/leads/:leadId/ai-insight` generates (or regenerates) an LLM-based fit assessment for one lead: `fitScore` (0-100), `summary`, `reasons`, and `nextAction`. Owners, admins, and members may invoke it; viewers cannot.
+
+The response body is the updated lead, with `aiInsight` and `aiInsightGeneratedAt` populated. The active provider is selected by the server-only `AI_PROVIDER` env var (`mock` by default, `groq` with `GROQ_API_KEY` set for real inference); the client never chooses or sees the provider. A malformed or schema-invalid model response is rejected server-side and surfaces as a `502 AI_PROVIDER_ERROR` rather than being stored.
+
 ### Team notifications
 
 - `GET /api/notifications` returns the latest 50 workspace notifications, the current user's `readAt` value for each item, and their unread count.

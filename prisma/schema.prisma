@@ -56,6 +56,7 @@ enum LeadActivityType {
   FORM_SUBMITTED
   MEETING_BOOKED
   NOTE_ADDED
+  AI_INSIGHT_GENERATED
 }
 
 enum CampaignStatus {
@@ -297,6 +298,8 @@ model Lead {
   sourceDetails  Json?
   score          Int            @default(0)
   scoreDetails   Json?
+  aiInsight            Json?
+  aiInsightGeneratedAt DateTime?
   consentAt      DateTime?
   consentSource  String?
   customFields   Json?

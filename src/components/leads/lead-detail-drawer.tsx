@@ -11,7 +11,7 @@ type SequenceSummary = { id: string; name: string; steps: { id: string }[] };
 type Enrollment = { id: string; status: string; nextRunAt: string | null; error: string | null; emailSequence: { name: string }; stepRuns: { id: string; position: number; subject: string; status: string; scheduledAt: string; attempts: number; error: string | null }[] };
 type RoutingMember = { id: string; name: string | null; email: string; role: string };
 
-const activityIcons: Record<string, string> = { CREATED: "+", UPDATED: "✎", SCORE_CHANGED: "✦", STATUS_CHANGED: "↗", FORM_SUBMITTED: "▤", NOTE_ADDED: "●", ASSIGNED: "◎", EMAIL_SENT: "✉", EMAIL_REPLIED: "↩", EMAIL_BOUNCED: "!", EMAIL_COMPLAINED: "!", EMAIL_UNSUBSCRIBED: "×", SUPPRESSION_CHANGED: "⊘", CRM_SYNCED: "◇", CRM_SYNC_FAILED: "!" };
+const activityIcons: Record<string, string> = { CREATED: "+", UPDATED: "✎", SCORE_CHANGED: "✦", STATUS_CHANGED: "↗", FORM_SUBMITTED: "▤", NOTE_ADDED: "●", ASSIGNED: "◎", EMAIL_SENT: "✉", EMAIL_REPLIED: "↩", EMAIL_BOUNCED: "!", EMAIL_COMPLAINED: "!", EMAIL_UNSUBSCRIBED: "×", SUPPRESSION_CHANGED: "⊘", CRM_SYNCED: "◇", CRM_SYNC_FAILED: "!", AI_INSIGHT_GENERATED: "✨" };
 
 async function request<T>(url: string, init?: RequestInit) {
   const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json" } });
@@ -33,6 +33,7 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
   const [sequenceId, setSequenceId] = useState("");
   const [workflowFeedback, setWorkflowFeedback] = useState("");
   const [crmFeedback, setCrmFeedback] = useState("");
+  const [aiError, setAiError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -99,6 +100,13 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
     finally { setBusy(false); }
   }
 
+  async function generateInsight() {
+    setBusy(true); setAiError("");
+    try { await request(`/api/leads/${leadId}/ai-insight`, { method: "POST" }); await load(); onChanged(); }
+    catch (requestError) { setAiError(requestError instanceof Error ? requestError.message : "Unable to generate AI insight."); }
+    finally { setBusy(false); }
+  }
+
   async function assignOwner(ownerId: string) {
     setBusy(true); setError("");
     try { await request(`/api/leads/${leadId}/owner`, { method: "PATCH", body: JSON.stringify({ ownerId: ownerId || null }) }); await load(); onChanged(); }
@@ -125,6 +133,17 @@ export function LeadDetailDrawer({ leadId, canAddNote, canManageWorkflows, onClo
           <div><dt>Email</dt><dd>{lead.email ?? "Not provided"}</dd></div><div><dt>Phone</dt><dd>{lead.phone ?? "Not provided"}</dd></div><div><dt>Job title</dt><dd>{lead.jobTitle ?? "Not provided"}</dd></div><div><dt>Company</dt><dd>{lead.companyName ?? "Not provided"}</dd></div><div><dt>Domain</dt><dd>{lead.companyDomain ?? "Not provided"}</dd></div><div><dt>Contact eligibility</dt><dd className={lead.suppression || !lead.consentAt ? "contact-blocked" : "contact-allowed"}>{lead.suppression ? `Suppressed · ${formatLeadStatus(lead.suppression.reason)}` : lead.consentAt ? "Eligible" : "No consent"}</dd></div>
         </dl></section>
         <section className="score-explanation"><h3>Why this score?</h3>{lead.scoreDetails?.matchedRules?.length ? <div>{lead.scoreDetails.matchedRules.map((rule) => <p key={rule.id}><span>{rule.name}</span><b className={rule.points < 0 ? "negative" : ""}>{rule.points > 0 ? "+" : ""}{rule.points}</b></p>)}</div> : <p className="drawer-muted">No active scoring rules matched this lead.</p>}</section>
+        {canAddNote && <section className="ai-insight-card"><div className="mock-email-heading"><div><h3>AI insight</h3><p>LLM-generated fit assessment · separate from the rule-based score above</p></div><span>AI</span></div>
+          {lead.aiInsight ? <div className="ai-insight-body">
+            <div className="ai-insight-score"><small>AI fit score</small><strong>{lead.aiInsight.fitScore}</strong></div>
+            <p className="ai-insight-summary">{lead.aiInsight.summary}</p>
+            <ul>{lead.aiInsight.reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>
+            <p className="ai-insight-next"><strong>Next action:</strong> {lead.aiInsight.nextAction}</p>
+            {lead.aiInsightGeneratedAt && <small className="drawer-muted">Generated {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(lead.aiInsightGeneratedAt))}</small>}
+          </div> : <p className="drawer-muted">No AI insight generated yet.</p>}
+          <button className="secondary-button" disabled={busy} onClick={() => void generateInsight()}>{busy ? "Generating…" : lead.aiInsight ? "Regenerate AI insight" : "Generate AI insight"}</button>
+          {aiError && <div className="inline-error">{aiError}</div>}
+        </section>}
         {canAddNote && <section className="crm-lead-card"><div><h3>CRM contact</h3><p>Development mock · no external transfer</p></div><button className="secondary-button" disabled={busy || !lead.email} onClick={() => void syncCrm()}>{busy ? "Syncing…" : "Sync to CRM"}</button>{crmFeedback && <div className="mock-email-success">{crmFeedback}</div>}</section>}
         {canAddNote && <section className="mock-email-card"><div className="mock-email-heading"><div><h3>Development email</h3><p>Mock mode · no external delivery</p></div><span>SAFE TEST</span></div>{lead.consentAt && !lead.suppression ? <form onSubmit={simulateEmail}><label>Subject<input maxLength={200} required value={emailSubject} onChange={(event) => setEmailSubject(event.target.value)} /></label><label>Message<textarea maxLength={20000} rows={4} required value={emailText} onChange={(event) => setEmailText(event.target.value)} /></label><button className="primary-button" disabled={busy}>{busy ? "Recording…" : "Simulate send"}</button></form> : <p className="mock-email-warning">{lead.suppression ? `Email is blocked because this address is suppressed for ${formatLeadStatus(lead.suppression.reason).toLowerCase()}.` : "This lead has no recorded consent, so email attempts are blocked."}</p>}{emailFeedback && <div className="mock-email-success">{emailFeedback}</div>}</section>}
         <section className="email-event-card"><div className="timeline-heading"><div><h3>Email delivery events</h3><small>Latest 20 provider events</small></div><span>{lead.emailEvents.length} events</span></div>{lead.emailEvents.length ? <div className="email-event-list">{lead.emailEvents.map((event) => <article key={event.id}><span className={`email-status ${event.type.toLowerCase()}`}>{event.type}</span><div><strong>{event.type === "REPLIED" ? "Reply received" : typeof event.metadata?.subject === "string" ? event.metadata.subject : event.providerMessageId ?? "Provider event"}</strong>{event.type === "REPLIED" && typeof event.metadata?.textPreview === "string" && <p>{event.metadata.textPreview}</p>}<small>{event.provider} · {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", timeZoneName: "short" }).format(new Date(event.occurredAt))}</small></div></article>)}</div> : <p className="drawer-muted">No email attempts have been recorded for this lead.</p>}</section>

@@ -133,6 +133,7 @@ The dependency audit is scoped to production packages because development-only t
 - Lead ownership with teammate filtering, manual reassignment, audited changes, targeted alerts, and round-robin routing
 - Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
 - Provider-independent CRM synchronization with local mock and real HubSpot contact adapters, field mapping, durable contact links, idempotent retries, and audit history
+- LLM-based AI lead insight: a qualitative fit score, reasoning, and next action, generated on demand alongside (not replacing) the rule-based score, with a mock provider for dev/CI and an optional Groq provider validated against a strict output schema
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 
@@ -141,6 +142,18 @@ Lead records shown in the dashboard are real workspace data. Charts, campaigns, 
 Authenticated users can access `/api/leads` and `/api/leads/:leadId`. Owner and admin roles can create, update, and archive leads; members can create and update; viewers have read-only access. All operations derive the workspace from the signed-in session rather than trusting a client-supplied workspace ID.
 
 See [docs/api.md](docs/api.md) for payloads, filters, response shapes, errors, and manual testing guidance.
+
+## AI lead insight
+
+`POST /api/leads/:leadId/ai-insight` generates a qualitative assessment of a lead — a 0-100 fit score, a short summary, grounded reasons, and a suggested next action — separate from the deterministic, rule-based `score` field. This exists to show the two scoring approaches side by side: the rule engine is auditable and instant but only as good as the rules you write, the AI insight can reason over ambiguous signals (title seniority, missing fields) but must be treated as a probabilistic opinion, not a fact.
+
+Design choices, mirroring the existing email/CRM provider pattern in this codebase:
+
+- **Provider abstraction** (`src/lib/ai/provider.ts`) with a deterministic `MockLeadInsightProvider` (default, no network call — safe for dev and CI) and a `GroqLeadInsightProvider` for real inference, selected via `AI_PROVIDER=mock|groq`.
+- **Strict output validation** (`src/lib/ai/validation.ts`): the model is instructed to return JSON only, and the response is parsed with Zod before it ever reaches the database. A malformed or out-of-range response is rejected as a `502 AI_PROVIDER_ERROR`, not silently coerced.
+- **No blind trust in the model's own reasoning**: the AI insight is stored and displayed alongside the rule-based score and its matched rules, not merged into it — a hiring manager or teammate can see exactly which parts of a lead's priority are deterministic and which are an LLM's judgment call.
+
+Set `GROQ_API_KEY` (free tier at [console.groq.com](https://console.groq.com)) and `AI_PROVIDER=groq` to enable real generation; without it, the app runs entirely on the mock provider.
 
 Capture forms are managed at `/forms`. Each active form has a public `/f/:publicId` URL and copyable iframe embed code. See [docs/capture-forms.md](docs/capture-forms.md).
 
