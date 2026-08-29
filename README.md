@@ -133,6 +133,7 @@ The dependency audit is scoped to production packages because development-only t
 - Lead ownership with teammate filtering, manual reassignment, audited changes, targeted alerts, and round-robin routing
 - Time-zone-aware public booking pages with conflict-safe scheduling, lead linking, and meeting activity
 - Provider-independent CRM synchronization with local mock and real HubSpot contact adapters, field mapping, durable contact links, idempotent retries, and audit history
+- Provider-independent AI lead insight generation with a local mock summarizer, a real Groq adapter, and durable, auditable results shown alongside the rule-based score
 
 Lead records shown in the dashboard are real workspace data. Charts, campaigns, and automations still use clearly scoped demonstration content while those product phases are under development.
 

@@ -25,6 +25,8 @@ export interface Lead {
   companyDomain: string | null;
   score: number;
   scoreDetails: { version?: number; rawScore?: number; matchedRules?: { id: string; name: string; points: number }[] } | null;
+  aiInsight: { fitScore: number; summary: string; reasons: string[]; nextAction: string } | null;
+  aiInsightGeneratedAt: string | null;
   status: LeadStatus;
   source: LeadSource;
   consentAt: string | null;
